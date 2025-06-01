@@ -456,9 +456,9 @@ class Coder:
 
             if not fname.exists():
                 if utils.touch_file(fname):
-                    self.io.tool_output(f"Creating empty file {fname}")
+                    self.io.tool_output(f"\n Creating empty file {fname}")
                 else:
-                    self.io.tool_warning(f"Can not create {fname}, skipping.")
+                    self.io.tool_warning(f"\n Can not create {fname}, skipping.")
                     continue
 
             if not fname.is_file():
@@ -536,7 +536,7 @@ class Coder:
                 Draft7Validator.check_schema(function)
 
             if self.verbose:
-                self.io.tool_output("JSON Schema:")
+                self.io.tool_output("\nJSON Schema:")
                 self.io.tool_output(json.dumps(self.functions, indent=4))
 
     def setup_lint_cmds(self, lint_cmds):
@@ -548,7 +548,7 @@ class Coder:
     def show_announcements(self):
         bold = True
         for line in self.get_announcements():
-            self.io.tool_output(line, bold=bold)
+            self.io.tool_output("\n" + line, bold=bold)
             bold = False
 
     def add_rel_fname(self, rel_fname):
@@ -1004,7 +1004,7 @@ class Coder:
         self.summarize_end()
 
         if self.verbose:
-            self.io.tool_output("Starting to summarize chat history.")
+            self.io.tool_output("\nStarting to summarize chat history.")
 
         self.summarizer_thread = threading.Thread(target=self.summarize_worker)
         self.summarizer_thread.start()
@@ -1017,7 +1017,7 @@ class Coder:
             self.io.tool_warning(err.args[0])
 
         if self.verbose:
-            self.io.tool_output("Finished summarizing chat history.")
+            self.io.tool_output("\nFinished summarizing chat history.")
 
     def summarize_end(self):
         if self.summarizer_thread is None:
@@ -1383,7 +1383,7 @@ class Coder:
                 ) or getattr(completion.usage, "cache_read_input_tokens", 0)
 
                 if self.verbose:
-                    self.io.tool_output(f"Warmed {format_tokens(cache_hit_tokens)} cached tokens.")
+                    self.io.tool_output(f"\n Warmed {format_tokens(cache_hit_tokens)} cached tokens.")
 
         self.cache_warming_thread = threading.Timer(0, warm_cache_worker)
         self.cache_warming_thread.daemon = True
@@ -1401,12 +1401,12 @@ class Coder:
                 f"Your estimated chat context of {input_tokens:,} tokens exceeds the"
                 f" {max_input_tokens:,} token limit for {self.main_model.name}!"
             )
-            self.io.tool_output("To reduce the chat context:")
-            self.io.tool_output("- Use /drop to remove unneeded files from the chat")
-            self.io.tool_output("- Use /clear to clear the chat history")
-            self.io.tool_output("- Break your code into smaller files")
+            self.io.tool_output("\nTo reduce the chat context:")
+            self.io.tool_output("\n- Use /drop to remove unneeded files from the chat")
+            self.io.tool_output("\n- Use /clear to clear the chat history")
+            self.io.tool_output("\n- Break your code into smaller files")
             self.io.tool_output(
-                "It's probably safe to try and send the request, most providers won't charge if"
+                "\nIt's probably safe to try and send the request, most providers won't charge if"
                 " the context limit is exceeded."
             )
 
@@ -1481,7 +1481,7 @@ class Coder:
                     else:
                         self.io.tool_error(err_msg)
 
-                    self.io.tool_output(f"Retrying in {retry_delay:.1f} seconds...")
+                    self.io.tool_output(f"\nRetrying in {retry_delay:.1f} seconds...")
                     time.sleep(retry_delay)
                     continue
                 except KeyboardInterrupt:
@@ -1525,7 +1525,7 @@ class Coder:
         # print("=" * 20)
         # dump(self.partial_response_content)
 
-        self.io.tool_output()
+        self.io.tool_output("\n")
 
         # Commented out to remove token/cost display per user request
         # self.show_usage_report()
@@ -2105,7 +2105,7 @@ class Coder:
         self.total_tokens_sent += self.message_tokens_sent
         self.total_tokens_received += self.message_tokens_received
 
-        self.io.tool_output(self.usage_report)
+        self.io.tool_output("\n" + self.usage_report)
 
         prompt_tokens = self.message_tokens_sent
         completion_tokens = self.message_tokens_received
@@ -2184,7 +2184,7 @@ class Coder:
         # if not fullp.stat().st_size:
         #     return
 
-        self.io.tool_output(f"Committing {path} before applying edits.")
+        self.io.tool_output(f"\nCommitting {path} before applying edits.")
         self.need_commit_before_edits.add(path)
 
     def allowed_to_edit(self, path):
@@ -2204,7 +2204,7 @@ class Coder:
 
         if not Path(full_path).exists():
             if not self.io.confirm_ask("Create new file?", subject=path):
-                self.io.tool_output(f"Skipping edits to {path}")
+                self.io.tool_output(f"\nSkipping edits to {path}")
                 return
 
             if not self.dry_run:
@@ -2226,7 +2226,7 @@ class Coder:
             "Allow edits to file that has not been added to the chat?",
             subject=path,
         ):
-            self.io.tool_output(f"Skipping edits to {path}")
+            self.io.tool_output(f"\nSkipping edits to {path}")
             return
 
         if need_to_add:
@@ -2306,10 +2306,10 @@ class Coder:
 
             err = err.args[0]
 
-            self.io.tool_error("The LLM did not conform to the edit format.")
-            self.io.tool_output(urls.edit_errors)
-            self.io.tool_output()
-            self.io.tool_output(str(err))
+            self.io.tool_error("\n The LLM did not conform to the edit format.")
+            self.io.tool_output("\n" + urls.edit_errors)
+            self.io.tool_output("\n")
+            self.io.tool_output("\n" + str(err))
 
             self.reflected_message = str(err)
             return edited
@@ -2328,9 +2328,9 @@ class Coder:
 
         for path in edited:
             if self.dry_run:
-                self.io.tool_output(f"Did not apply edit to {path} (--dry-run)")
+                self.io.tool_output(f"\n Did not apply edit to {path} (--dry-run)")
             else:
-                self.io.tool_output(f"Applied edit to {path}")
+                self.io.tool_output(f"\n Applied edit to {path}")
 
         return edited
 
@@ -2405,7 +2405,7 @@ class Coder:
         if not self.commit_before_message:
             return
         if self.commit_before_message[-1] != self.repo.get_head_commit_sha():
-            self.io.tool_output("You can use /undo to undo and discard each aider commit.")
+            self.io.tool_output("\nYou can use /undo to undo and discard each aider commit.")
 
     def dirty_commit(self):
         if not self.need_commit_before_edits:
@@ -2467,8 +2467,8 @@ class Coder:
             if not command or command.startswith("#"):
                 continue
 
-            self.io.tool_output()
-            self.io.tool_output(f"Running {command}")
+            self.io.tool_output("\n")
+            self.io.tool_output(f"\nRunning {command}")
             # Add the command to input history
             self.io.add_to_input_history(f"/run {command.strip()}")
             exit_status, output = run_cmd(command, error_print=self.io.tool_error, cwd=self.root)
@@ -2480,5 +2480,5 @@ class Coder:
         ):
             num_lines = len(accumulated_output.strip().splitlines())
             line_plural = "line" if num_lines == 1 else "lines"
-            self.io.tool_output(f"Added {num_lines} {line_plural} of output to the chat.")
+            self.io.tool_output(f"\nAdded {num_lines} {line_plural} of output to the chat.")
             return accumulated_output
