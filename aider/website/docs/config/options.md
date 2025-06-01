@@ -661,6 +661,10 @@ Environment variable: `AIDER_VOICE_INPUT_DEVICE`
 
 ## Other settings:
 
+### `--directory DIRECTORY`
+Specify a directory to use as the codebase (allows running aider from any location)  
+Environment variable: `AIDER_DIRECTORY`  
+
 ### `--disable-playwright`
 Never prompt for or attempt to install Playwright for web scraping (default: False).  
 Default: False  

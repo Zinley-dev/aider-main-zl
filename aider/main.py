@@ -658,6 +658,28 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
 
     analytics.event("launched")
 
+    # Handle --directory argument after io and analytics are available
+    if hasattr(args, 'directory') and args.directory:
+        try:
+            directory_path = Path(args.directory).expanduser().resolve()
+            if not directory_path.exists():
+                io.tool_error(f"Directory {args.directory} does not exist.")
+                analytics.event("exit", reason="Directory does not exist")
+                return 1
+            if not directory_path.is_dir():
+                io.tool_error(f"{args.directory} is not a directory.")
+                analytics.event("exit", reason="Path is not a directory")
+                return 1
+            os.chdir(directory_path)
+            io.tool_output(f"Changed working directory to: {directory_path}")
+            # Update git_root since we changed directories
+            if args.git and git is not None:
+                git_root = get_git_root()
+        except Exception as e:
+            io.tool_error(f"Failed to change to directory {args.directory}: {e}")
+            analytics.event("exit", reason="Failed to change directory")
+            return 1
+
     if args.gui and not return_coder:
         if not check_streamlit_install(io):
             analytics.event("exit", reason="Streamlit not installed")

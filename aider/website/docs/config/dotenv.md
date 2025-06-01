@@ -382,6 +382,9 @@ cog.outl("```")
 #################
 # Other settings:
 
+## Specify a directory to use as the codebase (allows running aider from any location)
+#AIDER_DIRECTORY=
+
 ## Never prompt for or attempt to install Playwright for web scraping (default: False).
 #AIDER_DISABLE_PLAYWRIGHT=false
 
