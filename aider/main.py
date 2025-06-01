@@ -146,10 +146,10 @@ def setup_git(git_root, io):
     with repo.config_writer() as git_config:
         if not user_name:
             git_config.set_value("user", "name", "Your Name")
-            io.tool_warning('Update git name with: git config user.name "Your Name"')
+            io.tool_warning('Update git name with: git config user.name "Your Name"\n')
         if not user_email:
             git_config.set_value("user", "email", "you@example.com")
-            io.tool_warning('Update git email with: git config user.email "you@example.com"')
+            io.tool_warning('Update git email with: git config user.email "you@example.com"\n')
 
     return repo.working_tree_dir
 
@@ -652,7 +652,7 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
         if not io.pretty:
             raise err
         io = get_io(False)
-        io.tool_warning("Terminal does not support pretty output (UnicodeDecodeError)")
+        io.tool_warning("Terminal does not support pretty output (UnicodeDecodeError)\n")
 
     # Process any environment variables set via --set-env
     if args.set_env:
@@ -689,15 +689,15 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
         os.environ["OPENAI_API_BASE"] = args.openai_api_base
     if args.openai_api_version:
         io.tool_warning(
-            "--openai-api-version is deprecated, use --set-env OPENAI_API_VERSION=<value>"
+            "--openai-api-version is deprecated, use --set-env OPENAI_API_VERSION=<value>\n"
         )
         os.environ["OPENAI_API_VERSION"] = args.openai_api_version
     if args.openai_api_type:
-        io.tool_warning("--openai-api-type is deprecated, use --set-env OPENAI_API_TYPE=<value>")
+        io.tool_warning("--openai-api-type is deprecated, use --set-env OPENAI_API_TYPE=<value>\n")
         os.environ["OPENAI_API_TYPE"] = args.openai_api_type
     if args.openai_organization_id:
         io.tool_warning(
-            "--openai-organization-id is deprecated, use --set-env OPENAI_ORGANIZATION=<value>"
+            "--openai-organization-id is deprecated, use --set-env OPENAI_ORGANIZATION=<value>\n"
         )
         os.environ["OPENAI_ORGANIZATION"] = args.openai_organization_id
 
@@ -854,7 +854,7 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
     if args.model.startswith("openrouter/") and not os.environ.get("OPENROUTER_API_KEY"):
         io.tool_warning(
             f"The specified model '{args.model}' requires an OpenRouter API key, which was not"
-            " found."
+            " found.\n"
         )
         # Attempt OAuth flow because the specific model needs it
         if offer_openrouter_oauth(io, analytics):
@@ -898,7 +898,7 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
     # Check if deprecated remove_reasoning is set
     if main_model.remove_reasoning is not None:
         io.tool_warning(
-            "Model setting 'remove_reasoning' is deprecated, please use 'reasoning_tag' instead."
+            "Model setting 'remove_reasoning' is deprecated, please use 'reasoning_tag' instead.\n"
         )
 
     # Set reasoning effort and thinking tokens if specified
@@ -929,7 +929,7 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
                 or setting["name"] not in main_model.accepts_settings
             ):
                 io.tool_warning(
-                    f"Warning: {main_model.name} does not support '{setting['name']}', ignoring."
+                    f"Warning: {main_model.name} does not support '{setting['name']}', ignoring.\n"
                 )
                 io.tool_output(
                     f"Use --no-check-model-accepts-settings to force the '{setting['name']}'"
@@ -1024,7 +1024,7 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
     if not main_model.streaming:
         if args.stream:
             io.tool_warning(
-                f"Warning: Streaming is not supported by {main_model.name}. Disabling streaming."
+                f"Warning: Streaming is not supported by {main_model.name}. Disabling streaming.\n"
             )
         args.stream = False
 
@@ -1176,14 +1176,14 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
     if git_root and Path.cwd().resolve() != Path(git_root).resolve():
         io.tool_warning(
             "Note: in-chat filenames are always relative to the git working dir, not the current"
-            " working dir."
+            " working dir.\n"
         )
 
         io.tool_output(f"Cur working dir: {Path.cwd()}")
         io.tool_output(f"Git working dir: {git_root}")
 
     if args.stream and args.cache_prompts:
-        io.tool_warning("Cost estimates may be inaccurate when using streaming and caching.")
+        io.tool_warning("Cost estimates may be inaccurate when using streaming and caching.\n")
 
     if args.load:
         commands.cmd_load(args.load)
@@ -1282,7 +1282,7 @@ def is_first_run_of_new_version(io, verbose=False):
         return is_first_run
 
     except Exception as e:
-        io.tool_warning(f"Error checking version: {e}")
+        io.tool_warning(f"Error checking version: {e}\n")
         if verbose:
             io.tool_output(f"Full exception details: {traceback.format_exc()}")
         return True  # Safer to assume it's a first run if we hit an error
@@ -1313,7 +1313,7 @@ def check_and_load_imports(io, is_first_run, verbose=False):
             thread.start()
 
     except Exception as e:
-        io.tool_warning(f"Error in loading imports: {e}")
+        io.tool_warning(f"Error in loading imports: {e}\n")
         if verbose:
             io.tool_output(f"Full exception details: {traceback.format_exc()}")
 
