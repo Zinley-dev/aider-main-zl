@@ -1524,7 +1524,8 @@ class Coder:
 
         self.io.tool_output()
 
-        self.show_usage_report()
+        # Commented out to remove token/cost display per user request
+        # self.show_usage_report()
 
         self.add_assistant_reply_to_cur_messages()
 

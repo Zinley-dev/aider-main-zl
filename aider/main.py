@@ -8,17 +8,19 @@ import webbrowser
 from dataclasses import fields
 from pathlib import Path
 
+import argparse
+import shtab
+
 try:
     import git
 except ImportError:
     git = None
 
 import importlib_resources
-import shtab
 from dotenv import load_dotenv
 from prompt_toolkit.enums import EditingMode
 
-from aider import __version__, models, urls, utils
+from aider import __version__, io as aider_io, models, urls, utils
 from aider.analytics import Analytics
 from aider.args import get_parser
 from aider.coders import Coder
@@ -477,8 +479,14 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
     default_config_files = list(map(str, default_config_files))
 
     parser = get_parser(default_config_files, git_root)
+    # First parsing attempt - this is just to check for basic config
+    # Suppress stderr to avoid false "unrecognized arguments" errors for arguments
+    # that might be defined later (e.g., --directory)
     try:
-        args, unknown = parser.parse_known_args(argv)
+        import contextlib
+        import io as stdio
+        with contextlib.redirect_stderr(stdio.StringIO()):
+            args, unknown = parser.parse_known_args(argv)
     except AttributeError as e:
         if all(word in str(e) for word in ["bool", "object", "has", "no", "attribute", "strip"]):
             if check_config_files_for_yes(default_config_files):
@@ -495,7 +503,10 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
 
     parser = get_parser(default_config_files, git_root)
 
-    args, unknown = parser.parse_known_args(argv)
+    # Second parsing attempt with reversed config files
+    # Also suppress stderr here
+    with contextlib.redirect_stderr(stdio.StringIO()):
+        args, unknown = parser.parse_known_args(argv)
 
     # Load the .env file specified in the arguments
     loaded_dotenvs = load_dotenv_files(git_root, args.env_file, args.encoding)
