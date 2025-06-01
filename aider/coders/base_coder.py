@@ -1520,12 +1520,10 @@ class Coder:
             self.remove_reasoning_content()
             self.multi_response_content = ""
 
-        ###
-        # print()
         # print("=" * 20)
         # dump(self.partial_response_content)
 
-        self.io.tool_output()
+        self.io.tool_output("[DONE]")
 
         # Commented out to remove token/cost display per user request
         # self.show_usage_report()
