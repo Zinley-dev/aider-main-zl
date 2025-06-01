@@ -542,6 +542,7 @@ class InputOutput:
             prompt_prefix += edit_format
         if self.multiline_mode:
             prompt_prefix += (" " if edit_format else "") + "multi"
+        prompt_prefix += "[Done]"
 
         show += prompt_prefix
         self.prompt_prefix = prompt_prefix
