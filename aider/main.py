@@ -477,7 +477,6 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
             directory_path = Path(directory_arg).expanduser().resolve()
             if not directory_path.exists():
                 # Create a minimal IO object just for error reporting
-                from aider.io import InputOutput
                 io = InputOutput(
                     pretty=True,
                     yes_always=False,
@@ -489,7 +488,6 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
                 io.tool_error(f"Directory {directory_arg} does not exist.")
                 return 1
             if not directory_path.is_dir():
-                from aider.io import InputOutput
                 io = InputOutput(
                     pretty=True,
                     yes_always=False,
@@ -503,7 +501,6 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
             os.chdir(directory_path)
             directory_changed_early = True
         except Exception as e:
-            from aider.io import InputOutput
             io = InputOutput(
                 pretty=True,
                 yes_always=False,
