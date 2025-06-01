@@ -456,6 +456,66 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
     if argv is None:
         argv = sys.argv[1:]
 
+    # Check for --directory argument early, before any directory-dependent operations
+    # This prevents picking up config from the current directory when a different
+    # directory is specified. We need to do this before:
+    # 1. Git root detection (which looks in current directory)
+    # 2. Config file loading (which looks for .aider.conf.yml in current directory)
+    # 3. .env file loading (which looks for .env in current directory)
+    directory_arg = None
+    directory_changed_early = False
+    for i, arg in enumerate(argv):
+        if arg == "--directory" and i + 1 < len(argv):
+            directory_arg = argv[i + 1]
+            break
+        elif arg.startswith("--directory="):
+            directory_arg = arg.split("=", 1)[1]
+            break
+    
+    if directory_arg:
+        try:
+            directory_path = Path(directory_arg).expanduser().resolve()
+            if not directory_path.exists():
+                # Create a minimal IO object just for error reporting
+                from aider.io import InputOutput
+                io = InputOutput(
+                    pretty=True,
+                    yes_always=False,
+                    input_history_file=None,
+                    chat_history_file=None,
+                    input=input,
+                    output=output,
+                )
+                io.tool_error(f"Directory {directory_arg} does not exist.")
+                return 1
+            if not directory_path.is_dir():
+                from aider.io import InputOutput
+                io = InputOutput(
+                    pretty=True,
+                    yes_always=False,
+                    input_history_file=None,
+                    chat_history_file=None,
+                    input=input,
+                    output=output,
+                )
+                io.tool_error(f"{directory_arg} is not a directory.")
+                return 1
+            os.chdir(directory_path)
+            directory_changed_early = True
+        except Exception as e:
+            from aider.io import InputOutput
+            io = InputOutput(
+                pretty=True,
+                yes_always=False,
+                input_history_file=None,
+                chat_history_file=None,
+                input=input,
+                output=output,
+            )
+            io.tool_error(f"Failed to change to directory {directory_arg}: {e}")
+            return 1
+
+    # Now proceed with git root detection in the correct directory
     if git is None:
         git_root = None
     elif force_git_root:
@@ -669,27 +729,10 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
 
     analytics.event("launched")
 
-    # Handle --directory argument after io and analytics are available
-    if hasattr(args, 'directory') and args.directory:
-        try:
-            directory_path = Path(args.directory).expanduser().resolve()
-            if not directory_path.exists():
-                io.tool_error(f"Directory {args.directory} does not exist.")
-                analytics.event("exit", reason="Directory does not exist")
-                return 1
-            if not directory_path.is_dir():
-                io.tool_error(f"{args.directory} is not a directory.")
-                analytics.event("exit", reason="Path is not a directory")
-                return 1
-            os.chdir(directory_path)
-            io.tool_output(f"Changed working directory to: {directory_path}")
-            # Update git_root since we changed directories
-            if args.git and git is not None:
-                git_root = get_git_root()
-        except Exception as e:
-            io.tool_error(f"Failed to change to directory {args.directory}: {e}")
-            analytics.event("exit", reason="Failed to change directory")
-            return 1
+    # Directory change was already handled early in the function before git root detection
+    # Report the change if it happened
+    if directory_changed_early and directory_arg:
+        io.tool_output(f"Changed working directory to: {Path.cwd()}")
 
     if args.gui and not return_coder:
         if not check_streamlit_install(io):
