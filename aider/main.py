@@ -729,7 +729,7 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
     # Directory change was already handled early in the function before git root detection
     # Report the change if it happened
     if directory_changed_early and directory_arg:
-        io.tool_output(f"Changed working directory to: {Path.cwd()}")
+        pass
 
     if args.gui and not return_coder:
         if not check_streamlit_install(io):

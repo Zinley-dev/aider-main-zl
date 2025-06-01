@@ -357,7 +357,8 @@ class InputOutput:
         else:
             self.console = Console(force_terminal=False, no_color=True)  # non-pretty
             if self.is_dumb_terminal:
-                self.tool_output("Detected dumb terminal, disabling fancy input and pretty output.")
+                # self.tool_output("Detected dumb terminal, disabling fancy input and pretty output.")
+                pass
 
         self.file_watcher = file_watcher
         self.root = root
