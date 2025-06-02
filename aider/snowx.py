@@ -357,7 +357,26 @@ class SnowXClient:
                 chunk["choices"].append(chunk_choice)
                 
             if chunk["choices"] and (chunk["choices"][0]["delta"] or chunk["choices"][0]["finish_reason"]):
-                yield chunk
+                # Convert to object for consistency
+                class StreamChunk:
+                    def __init__(self, data):
+                        self.__dict__.update(data)
+                        # Convert nested dicts to objects
+                        if hasattr(self, 'choices'):
+                            self.choices = [self._dict_to_obj(choice) for choice in self.choices]
+                            
+                    def _dict_to_obj(self, d):
+                        if isinstance(d, dict):
+                            obj = type('obj', (object,), {})()
+                            for k, v in d.items():
+                                setattr(obj, k, self._dict_to_obj(v))
+                            return obj
+                        elif isinstance(d, list):
+                            return [self._dict_to_obj(item) for item in d]
+                        else:
+                            return d
+                            
+                yield StreamChunk(chunk)
                 
     def _convert_response(self, data: Dict) -> Dict:
         """Convert SnowX response to litellm format."""
@@ -394,7 +413,28 @@ class SnowXClient:
         if "usage" in data:
             response["usage"] = data["usage"]
             
-        return response
+        # Convert to object-like structure that litellm expects
+        class Response:
+            def __init__(self, data):
+                self.__dict__.update(data)
+                # Convert nested dicts to objects
+                if hasattr(self, 'choices'):
+                    self.choices = [self._dict_to_obj(choice) for choice in self.choices]
+                if hasattr(self, 'usage'):
+                    self.usage = self._dict_to_obj(self.usage)
+                    
+            def _dict_to_obj(self, d):
+                if isinstance(d, dict):
+                    obj = type('obj', (object,), {})()
+                    for k, v in d.items():
+                        setattr(obj, k, self._dict_to_obj(v))
+                    return obj
+                elif isinstance(d, list):
+                    return [self._dict_to_obj(item) for item in d]
+                else:
+                    return d
+                    
+        return Response(response)
 
 
 # Synchronous wrapper for SnowX client
