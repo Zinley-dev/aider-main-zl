@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 """
 Simple test file for testing aider with SnowX provider.
+
+This module provides basic arithmetic operations and greeting functionality:
+
+Functions:
+    hello_snowx(): Returns a greeting message from SnowX
+    add_numbers(a, b): Returns the sum of two numbers
+    multiply_numbers(a, b): Returns the product of two numbers
+    divide_numbers(a, b): Returns the division of two numbers, with zero division handling
 """
 
 def hello_snowx():
