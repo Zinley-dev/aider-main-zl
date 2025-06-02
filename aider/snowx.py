@@ -225,7 +225,7 @@ class SnowXClient:
         model: str,
         messages: List[Dict],
         stream: bool = False,
-        temperature: float = 0.2,
+        temperature: float = 0.0,
         max_tokens: Optional[int] = None,
         tools: Optional[List[Dict]] = None,
         tool_choice: Optional[Dict] = None,
@@ -274,7 +274,9 @@ class SnowXClient:
         # Handle o4-mini specific parameters
         if model != "snowx/o4-mini" and model != "snowx/o4-mini-high":
             request_body["temperature"] = temperature
-            request_body["top_p"] = kwargs.get("top_p", 0.9)
+            # Only set top_p if explicitly provided in kwargs
+            if "top_p" in kwargs:
+                request_body["top_p"] = kwargs["top_p"]
             
         # Handle reasoning effort for o4-mini-high
         if model == "snowx/o4-mini-high":

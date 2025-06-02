@@ -1723,18 +1723,18 @@
   edit_format: diff
   weak_model_name: snowx/gpt-4.1-mini
   use_repo_map: true
-  lazy: true
+  lazy: false
   reminder: sys
-  examples_as_sys_msg: true
+  examples_as_sys_msg: false
   editor_edit_format: editor-diff
 
 - name: snowx/gpt-4.1-mini
   edit_format: diff
   weak_model_name: snowx/gpt-4.1-mini
   use_repo_map: true
-  lazy: true
+  lazy: false
   reminder: sys
-  examples_as_sys_msg: true
+  examples_as_sys_msg: false
 
 - name: snowx/gpt-4.1-nano
   weak_model_name: snowx/gpt-4.1-nano
@@ -1772,17 +1772,21 @@
   use_repo_map: true
   editor_model_name: snowx/claude-sonnet-4
   editor_edit_format: editor-diff
+  accepts_settings: ["thinking_tokens"]
 
 - name: snowx/claude-sonnet-4
   edit_format: diff
   weak_model_name: snowx/claude-3-5-sonnet
   use_repo_map: true
   editor_edit_format: editor-diff
+  accepts_settings: ["thinking_tokens"]
 
 - name: snowx/claude-3-7-sonnet
   edit_format: diff
   weak_model_name: snowx/claude-3-5-sonnet
   use_repo_map: true
+  examples_as_sys_msg: true
+  accepts_settings: ["thinking_tokens"]
 
 - name: snowx/claude-3-5-sonnet
   edit_format: diff
@@ -1795,10 +1799,13 @@
   edit_format: diff
   weak_model_name: snowx/grok-3-mini
   use_repo_map: true
+  accepts_settings: ["thinking_tokens", "reasoning_effort"]
 
 - name: snowx/grok-3-mini
   weak_model_name: snowx/grok-3-mini
+  edit_format: whole
   use_repo_map: true
+  accepts_settings: ["reasoning_effort", "thinking_tokens"]
 
 - name: snowx/mai-ds-r1
   edit_format: diff
@@ -1815,10 +1822,14 @@
   edit_format: diff
   weak_model_name: snowx/gpt-4.1-mini
   use_repo_map: true
+  use_temperature: false
+  examples_as_sys_msg: true
   reasoning_tag: think
 
 - name: snowx/deepseek-v3
   edit_format: diff
   weak_model_name: snowx/gpt-4.1-mini
   use_repo_map: true
+  reminder: sys
+  examples_as_sys_msg: true
 
