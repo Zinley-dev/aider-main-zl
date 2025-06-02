@@ -118,6 +118,7 @@ class GitRepo:
         if num_repos == 0:
             raise FileNotFoundError
         if num_repos > 1:
+            self.io.tool_error("Files are in different git repos.")
             raise FileNotFoundError
 
         # https://github.com/gitpython-developers/GitPython/issues/427
@@ -282,7 +283,7 @@ class GitRepo:
                 try:
                     self.repo.git.add(fname)
                 except ANY_GIT_ERROR as err:
-                    pass
+                    self.io.tool_error(f"Unable to add {fname}: {err}")
             cmd += ["--"] + fnames
         else:
             cmd += ["-a"]
@@ -309,11 +310,12 @@ class GitRepo:
                 # Perform the commit
                 self.repo.git.commit(cmd)
                 commit_hash = self.get_head_commit_sha(short=True)
+                self.io.tool_output(f"Commit {commit_hash} {commit_message}", bold=True)
                 return commit_hash, commit_message
 
         except ANY_GIT_ERROR as err:
+            self.io.tool_error(f"Unable to commit: {err}")
             # No return here, implicitly returns None
-            pass
 
     def get_rel_repo_dir(self):
         try:
@@ -353,6 +355,7 @@ class GitRepo:
                     break  # Found a model that could generate the message
 
         if not commit_message:
+            self.io.tool_error("Failed to generate commit message!")
             return
 
         commit_message = commit_message.strip()
@@ -397,7 +400,7 @@ class GitRepo:
 
             return diffs
         except ANY_GIT_ERROR as err:
-            pass
+            self.io.tool_error(f"Unable to diff: {err}")
 
     def diff_commits(self, pretty, from_commit, to_commit):
         args = []
@@ -421,6 +424,8 @@ class GitRepo:
             commit = None
         except ANY_GIT_ERROR as err:
             self.git_repo_error = err
+            self.io.tool_error(f"Unable to list files in git repo: {err}")
+            self.io.tool_output("Is your git repo corrupted?")
             return []
 
         files = set()
@@ -439,11 +444,17 @@ class GitRepo:
                         except IndexError:
                             # Handle potential index error during tree traversal
                             # without relying on potentially unassigned 'blob'
+                            self.io.tool_warning(
+                                "GitRepo: Index error encountered while reading git tree object."
+                                " Skipping."
+                            )
                             continue
                         except StopIteration:
                             break
                 except ANY_GIT_ERROR as err:
                     self.git_repo_error = err
+                    self.io.tool_error(f"Unable to list files in git repo: {err}")
+                    self.io.tool_output("Is your git repo corrupted?")
                     return []
                 files = set(self.normalize_path(path) for path in files)
                 self.tree_files[commit] = set(files)
@@ -454,7 +465,7 @@ class GitRepo:
             staged_files = [path for path, _ in index.entries.keys()]
             files.update(self.normalize_path(path) for path in staged_files)
         except ANY_GIT_ERROR as err:
-            pass
+            self.io.tool_error(f"Unable to read staged files: {err}")
 
         res = [fname for fname in files if not self.ignored_file(fname)]
 

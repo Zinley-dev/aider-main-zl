@@ -84,7 +84,7 @@ def get_coder():
     coder.commands.io = io
 
     for line in coder.get_announcements():
-        pass
+        coder.io.tool_output(line)
 
     return coder
 

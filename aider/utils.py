@@ -295,7 +295,11 @@ def check_pip_install_extra(io, module, prompt, pip_install_cmd, self_update=Fal
 
     cmd = get_pip_install(pip_install_cmd)
 
+    if prompt:
+        io.tool_warning(prompt)
+
     if self_update and platform.system() == "Windows":
+        io.tool_output("Run this command to update:")
         print()
         print(printable_shell_command(cmd))  # plain print so it doesn't line-wrap
         return
@@ -311,7 +315,10 @@ def check_pip_install_extra(io, module, prompt, pip_install_cmd, self_update=Fal
             __import__(module)
             return True
         except (ImportError, ModuleNotFoundError, RuntimeError) as err:
+            io.tool_error(str(err))
             pass
+
+    io.tool_error(output)
 
     print()
     print("Install failed, try running this command manually:")

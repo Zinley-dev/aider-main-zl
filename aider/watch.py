@@ -194,13 +194,21 @@ class FileWatcher:
                 self.analytics.event("ai-comments file-add")
             self.coder.abs_fnames.add(fname)
             rel_fname = self.coder.get_rel_fname(fname)
-            added = True
+            if not added:
+                self.io.tool_output()
+                added = True
+            self.io.tool_output(f"Added {rel_fname} to the chat")
 
         if not has_action:
+            if added:
+                self.io.tool_output(
+                    "End your comment with AI! to request changes or AI? to ask questions"
+                )
             return ""
 
         if self.analytics:
             self.analytics.event("ai-comments execute")
+        self.io.tool_output("Processing your request...")
 
         if has_action == "!":
             res = watch_code_prompt

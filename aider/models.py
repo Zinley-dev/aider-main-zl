@@ -1140,36 +1140,36 @@ def sanity_check_model(io, model):
 
     if model.missing_keys:
         show = True
-        print(f"Warning: {model} expects these environment variables")
+        io.tool_warning(f"Warning: {model} expects these environment variables")
         for key in model.missing_keys:
             value = os.environ.get(key, "")
             status = "Set" if value else "Not set"
-            print(f"- {key}: {status}")
+            io.tool_output(f"- {key}: {status}")
 
         if platform.system() == "Windows":
-            print(
+            io.tool_output(
                 "Note: You may need to restart your terminal or command prompt for `setx` to take"
                 " effect."
             )
 
     elif not model.keys_in_environment:
         show = True
-        print(f"Warning for {model}: Unknown which environment variables are required.")
+        io.tool_warning(f"Warning for {model}: Unknown which environment variables are required.")
 
     # Check for model-specific dependencies
     check_for_dependencies(io, model.name)
 
     if not model.info:
         show = True
-        print(
+        io.tool_warning(
             f"Warning for {model}: Unknown context window size and costs, using sane defaults."
         )
 
         possible_matches = fuzzy_match_models(model.name)
         if possible_matches:
-            print("Did you mean one of these?")
+            io.tool_output("Did you mean one of these?")
             for match in possible_matches:
-                print(f"- {match}")
+                io.tool_output(f"- {match}")
 
     return show
 
@@ -1246,11 +1246,11 @@ def fuzzy_match_models(name):
 def print_matching_models(io, search):
     matches = fuzzy_match_models(search)
     if matches:
-        print(f'Models which match "{search}":')
+        io.tool_output(f'Models which match "{search}":')
         for model in matches:
-            print(f"- {model}")
+            io.tool_output(f"- {model}")
     else:
-        print(f'No models match "{search}".')
+        io.tool_output(f'No models match "{search}".')
 
 
 def get_model_settings_as_yaml():

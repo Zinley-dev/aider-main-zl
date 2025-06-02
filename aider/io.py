@@ -965,9 +965,15 @@ class InputOutput:
         if not isinstance(message, Text):
             message = Text(message)
         color = ensure_hash_prefix(color) if color else None
-        if isinstance(message, Text):
-            message = message.plain
-        message = str(message).encode("ascii", errors="replace").decode("ascii")
+        style = dict(style=color) if self.pretty and color else dict()
+        try:
+            self.console.print(message, **style)
+        except UnicodeEncodeError:
+            # Fallback to ASCII-safe output
+            if isinstance(message, Text):
+                message = message.plain
+            message = str(message).encode("ascii", errors="replace").decode("ascii")
+            self.console.print(message, **style)
 
     def tool_error(self, message="", strip=True):
         self.num_error_outputs += 1

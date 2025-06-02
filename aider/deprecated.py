@@ -114,6 +114,11 @@ def handle_deprecated_model_args(args, io):
                     display_name = alias
                     break
 
+            # Show the warning
+            io.tool_warning(
+                f"The --{arg_name.replace('_', '-')} flag is deprecated and will be removed in a"
+                f" future version. Please use --model {display_name} instead."
+            )
 
             # Set the model
             if not args.model:

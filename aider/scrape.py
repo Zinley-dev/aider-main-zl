@@ -58,16 +58,19 @@ def install_playwright(io):
 See {urls.enable_playwright} for more info.
 """
 
+    io.tool_output(text)
     if not io.confirm_ask("Install playwright?", default="y"):
         return
 
     if not has_pip:
         success, output = utils.run_install(pip_cmd)
         if not success:
+            io.tool_error(output)
             return
 
     success, output = utils.run_install(chromium_cmd)
     if not success:
+        io.tool_error(output)
         return
 
     return True
