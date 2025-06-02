@@ -542,8 +542,30 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
     try:
         import contextlib
         import io as stdio
+        
+        # IMPORTANT: We filter out --directory from the initial parsing attempts
+        # to avoid parser state confusion. This fixes an intermittent bug where
+        # configargparse would sometimes fail to recognize --directory as a valid
+        # argument when multiple parser instances are created and parsed with
+        # stderr suppression. The --directory has already been processed above
+        # to change the working directory, so we don't need it for these initial
+        # config file parsing attempts. It will be properly included in the final
+        # parse_args() call below.
+        argv_without_directory = []
+        skip_next = False
+        for i, arg in enumerate(argv):
+            if skip_next:
+                skip_next = False
+                continue
+            if arg == "--directory":
+                skip_next = True
+                continue
+            elif arg.startswith("--directory="):
+                continue
+            argv_without_directory.append(arg)
+        
         with contextlib.redirect_stderr(stdio.StringIO()):
-            args, unknown = parser.parse_known_args(argv)
+            args, unknown = parser.parse_known_args(argv_without_directory)
     except AttributeError as e:
         if all(word in str(e) for word in ["bool", "object", "has", "no", "attribute", "strip"]):
             if check_config_files_for_yes(default_config_files):
@@ -563,13 +585,19 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
     # Second parsing attempt with reversed config files
     # Also suppress stderr here
     with contextlib.redirect_stderr(stdio.StringIO()):
-        args, unknown = parser.parse_known_args(argv)
+        args, unknown = parser.parse_known_args(argv_without_directory)
 
     # Load the .env file specified in the arguments
     loaded_dotenvs = load_dotenv_files(git_root, args.env_file, args.encoding)
 
     # Parse again to include any arguments that might have been defined in .env
+    # Use the original argv since --directory should be properly defined now
     args = parser.parse_args(argv)
+    
+    # Manually set the directory attribute if it was provided
+    # This ensures it's always available even if parser had issues
+    if directory_arg:
+        args.directory = directory_arg
 
     if args.shell_completions:
         # Ensure parser.prog is set for shtab, though it should be by default
