@@ -973,7 +973,7 @@ class InputOutput:
             if isinstance(message, Text):
                 message = message.plain
             message = str(message).encode("ascii", errors="replace").decode("ascii")
-            self.console.print(message, **style)
+            #self.console.print(message, **style)
 
     def tool_error(self, message="", strip=True):
         self.num_error_outputs += 1
@@ -999,7 +999,7 @@ class InputOutput:
             style["reverse"] = bold
 
         style = RichStyle(**style)
-        self.console.print(*messages, style=style)
+        #self.console.print(*messages, style=style)
 
     def get_assistant_mdstream(self):
         mdargs = dict(style=self.assistant_output_color, code_theme=self.code_theme)
