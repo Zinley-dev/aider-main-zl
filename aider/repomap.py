@@ -80,11 +80,6 @@ class RepoMap:
         self.map_processing_time = 0
         self.last_map = None
 
-        if self.verbose:
-            self.io.tool_output(
-                f"RepoMap initialized with map_mul_no_files: {self.map_mul_no_files}"
-            )
-
     def token_count(self, text):
         len_text = len(text)
         if len_text < 200:
@@ -140,16 +135,11 @@ class RepoMap:
                 force_refresh,
             )
         except RecursionError:
-            self.io.tool_error("Disabling repo map, git repo too large?")
             self.max_map_tokens = 0
             return
 
         if not files_listing:
             return
-
-        if self.verbose:
-            num_tokens = self.token_count(files_listing)
-            self.io.tool_output(f"Repo-map: {num_tokens / 1024:.1f} k-tokens")
 
         if chat_files:
             other = "other "
@@ -175,9 +165,6 @@ class RepoMap:
 
     def tags_cache_error(self, original_error=None):
         """Handle SQLite errors by trying to recreate cache, falling back to dict if needed"""
-
-        if self.verbose and original_error:
-            self.io.tool_warning(f"Tags cache error: {str(original_error)}")
 
         if isinstance(getattr(self, "TAGS_CACHE", None), dict):
             return
@@ -205,11 +192,7 @@ class RepoMap:
 
         except SQLITE_ERRORS as e:
             # If anything goes wrong, warn and fall back to dict
-            self.io.tool_warning(
-                f"Unable to use tags cache at {path}, falling back to memory cache"
-            )
-            if self.verbose:
-                self.io.tool_warning(f"Cache recreation error: {str(e)}")
+            pass
 
         self.TAGS_CACHE = dict()
 
@@ -227,7 +210,7 @@ class RepoMap:
         try:
             return os.path.getmtime(fname)
         except FileNotFoundError:
-            self.io.tool_warning(f"File not found error: {fname}")
+            pass
 
     def get_tags(self, fname, rel_fname):
         # Check if the file is in the cache and if the modification time has not changed
@@ -370,17 +353,12 @@ class RepoMap:
             cache_size = len(self.TAGS_CACHE)
 
         if len(fnames) - cache_size > 100:
-            self.io.tool_output(
-                "Initial repo scan can be slow in larger repos, but only happens once."
-            )
             fnames = tqdm(fnames, desc="Scanning repo")
             showing_bar = True
         else:
             showing_bar = False
 
         for fname in fnames:
-            if self.verbose:
-                self.io.tool_output(f"Processing {fname}")
             if progress and not showing_bar:
                 progress(f"{UPDATING_REPO_MAP_MESSAGE}: {fname}")
 
@@ -391,10 +369,6 @@ class RepoMap:
 
             if not file_ok:
                 if fname not in self.warned_files:
-                    self.io.tool_warning(f"Repo-map can't include {fname}")
-                    self.io.tool_output(
-                        "Has it been deleted from the file system but not from git?"
-                    )
                     self.warned_files.add(fname)
                 continue
 
