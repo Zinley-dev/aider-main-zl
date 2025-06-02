@@ -100,6 +100,12 @@ MODEL_ALIASES = {
     "gemini-exp": "gemini/gemini-2.5-pro-exp-03-25",
     "grok3": "xai/grok-3-beta",
     "optimus": "openrouter/openrouter/optimus-alpha",
+    # SnowX aliases
+    "snowx": "snowx/gpt-4.1",
+    "snowx-claude": "snowx/claude-3-5-sonnet",
+    "snowx-mini": "snowx/gpt-4.1-mini",
+    "snowx-o4": "snowx/o4-mini",
+    "snowx-r1": "snowx/deepseek-r1",
 }
 # Model metadata loaded from resources and user's files.
 
@@ -674,6 +680,10 @@ class Model(ModelSettings):
         else:
             provider = None
 
+        # SnowX doesn't require API keys
+        if provider == "snowx":
+            return dict(keys_in_environment=True, missing_keys=[])
+
         keymap = dict(
             openrouter="OPENROUTER_API_KEY",
             openai="OPENAI_API_KEY",
@@ -905,6 +915,51 @@ class Model(ModelSettings):
         if self.is_deepseek_r1():
             messages = ensure_alternating_roles(messages)
 
+        # Check if this is a SnowX model
+        if self.name.startswith("snowx/"):
+            # Use SnowX client instead of litellm
+            from aider.snowx import create_snowx_completion
+            
+            kwargs = dict(
+                model=self.name,
+                messages=messages,
+                stream=stream,
+            )
+            
+            if self.use_temperature is not False:
+                if temperature is None:
+                    if isinstance(self.use_temperature, bool):
+                        temperature = 0
+                    else:
+                        temperature = float(self.use_temperature)
+                kwargs["temperature"] = temperature
+                
+            if functions is not None:
+                function = functions[0]
+                kwargs["tools"] = [dict(type="function", function=function)]
+                kwargs["tool_choice"] = {"type": "function", "function": {"name": function["name"]}}
+                
+            if self.extra_params:
+                # Extract extra_body if present
+                extra_body = self.extra_params.get("extra_body")
+                if extra_body:
+                    kwargs["extra_body"] = extra_body
+                # Add other extra params
+                for k, v in self.extra_params.items():
+                    if k not in ["extra_body"]:
+                        kwargs[k] = v
+                        
+            key = json.dumps(kwargs, sort_keys=True).encode()
+            hash_object = hashlib.sha1(key)
+            
+            if self.verbose:
+                dump(kwargs)
+                
+            # Call SnowX API
+            res = create_snowx_completion(**kwargs)
+            return hash_object, res
+
+        # Regular litellm path for non-SnowX models
         kwargs = dict(
             model=self.name,
             stream=stream,

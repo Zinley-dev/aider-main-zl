@@ -1279,62 +1279,6 @@
   system_prompt_prefix: "Formatting re-enabled. "
   accepts_settings: ["reasoning_effort"]
   examples_as_sys_msg: true
-  #extra_params:
-  #  extra_body:
-  #   reasoning_effort: high
-
-- name: openrouter/openai/o4-mini
-  edit_format: diff
-  weak_model_name: openrouter/openai/gpt-4.1-mini
-  use_repo_map: true
-  use_temperature: false
-  editor_model_name: openrouter/openai/gpt-4.1
-  editor_edit_format: editor-diff
-  system_prompt_prefix: "Formatting re-enabled. "
-  accepts_settings: ["reasoning_effort"]
-  examples_as_sys_msg: true
-  #extra_params:
-  #  extra_body:
-  #   reasoning_effort: high
-
-- name: azure/o4-mini
-  edit_format: diff
-  weak_model_name: azure/gpt-4.1-mini
-  use_repo_map: true
-  use_temperature: false
-  editor_model_name: azure/gpt-4.1
-  editor_edit_format: editor-diff
-  system_prompt_prefix: "Formatting re-enabled. "
-  accepts_settings: ["reasoning_effort"]
-  examples_as_sys_msg: true
-  #extra_params:
-  #  extra_body:
-  #   reasoning_effort: high
-
-- name: azure/o3
-  streaming: false
-  edit_format: diff
-  weak_model_name: azure/gpt-4.1-mini
-  use_repo_map: true
-  editor_model_name: azure/gpt-4.1
-  editor_edit_format: editor-diff
-  system_prompt_prefix: "Formatting re-enabled. "
-  accepts_settings: ["reasoning_effort"]
-  examples_as_sys_msg: true
-  #extra_params:
-  #  extra_body:
-  #    reasoning_effort: high
-
-- name: openai/o4-mini
-  edit_format: diff
-  weak_model_name: openai/gpt-4.1-mini
-  use_repo_map: true
-  use_temperature: false
-  editor_model_name: openai/gpt-4.1
-  editor_edit_format: editor-diff
-  system_prompt_prefix: "Formatting re-enabled. "
-  accepts_settings: ["reasoning_effort"]
-  examples_as_sys_msg: true
 
 - name: openrouter/openai/o4-mini
   edit_format: diff
@@ -1764,4 +1708,117 @@
   editor_model_name: openrouter/anthropic/claude-sonnet-4
   editor_edit_format: editor-diff
   accepts_settings: ["thinking_tokens"]
+
+# SnowX Models - No API key required
+- name: snowx/gpt-4o
+  edit_format: diff
+  weak_model_name: snowx/gpt-4o-mini
+  use_repo_map: true
+  lazy: true
+  reminder: sys
+  examples_as_sys_msg: true
+  editor_edit_format: editor-diff
+
+- name: snowx/gpt-4.1
+  edit_format: diff
+  weak_model_name: snowx/gpt-4.1-mini
+  use_repo_map: true
+  lazy: true
+  reminder: sys
+  examples_as_sys_msg: true
+  editor_edit_format: editor-diff
+
+- name: snowx/gpt-4.1-mini
+  edit_format: diff
+  weak_model_name: snowx/gpt-4.1-mini
+  use_repo_map: true
+  lazy: true
+  reminder: sys
+  examples_as_sys_msg: true
+
+- name: snowx/gpt-4.1-nano
+  weak_model_name: snowx/gpt-4.1-nano
+  lazy: true
+  reminder: sys
+
+- name: snowx/o4-mini
+  edit_format: diff
+  weak_model_name: snowx/gpt-4.1-mini
+  use_repo_map: true
+  use_temperature: false
+  editor_model_name: snowx/gpt-4.1
+  editor_edit_format: editor-diff
+  system_prompt_prefix: "Formatting re-enabled. "
+  accepts_settings: ["reasoning_effort"]
+  examples_as_sys_msg: true
+
+- name: snowx/o4-mini-high
+  edit_format: diff
+  weak_model_name: snowx/gpt-4.1-mini
+  use_repo_map: true
+  use_temperature: false
+  editor_model_name: snowx/gpt-4.1
+  editor_edit_format: editor-diff
+  system_prompt_prefix: "Formatting re-enabled. "
+  accepts_settings: ["reasoning_effort"]
+  examples_as_sys_msg: true
+  extra_params:
+    extra_body:
+      reasoning_effort: high
+
+- name: snowx/claude-opus-4
+  edit_format: diff
+  weak_model_name: snowx/claude-3-5-sonnet
+  use_repo_map: true
+  editor_model_name: snowx/claude-sonnet-4
+  editor_edit_format: editor-diff
+
+- name: snowx/claude-sonnet-4
+  edit_format: diff
+  weak_model_name: snowx/claude-3-5-sonnet
+  use_repo_map: true
+  editor_edit_format: editor-diff
+
+- name: snowx/claude-3-7-sonnet
+  edit_format: diff
+  weak_model_name: snowx/claude-3-5-sonnet
+  use_repo_map: true
+
+- name: snowx/claude-3-5-sonnet
+  edit_format: diff
+  weak_model_name: snowx/claude-3-5-sonnet
+  use_repo_map: true
+  examples_as_sys_msg: true
+  editor_edit_format: editor-diff
+
+- name: snowx/grok-3
+  edit_format: diff
+  weak_model_name: snowx/grok-3-mini
+  use_repo_map: true
+
+- name: snowx/grok-3-mini
+  weak_model_name: snowx/grok-3-mini
+  use_repo_map: true
+
+- name: snowx/mai-ds-r1
+  edit_format: diff
+  weak_model_name: snowx/gpt-4.1-mini
+  use_repo_map: true
+  reasoning_tag: think
+
+- name: snowx/llama-maverick
+  edit_format: diff
+  weak_model_name: snowx/gpt-4.1-mini
+  use_repo_map: true
+
+- name: snowx/deepseek-r1
+  edit_format: diff
+  weak_model_name: snowx/gpt-4.1-mini
+  use_repo_map: true
+  reasoning_tag: think
+
+- name: snowx/deepseek-v3
+  edit_format: diff
+  weak_model_name: snowx/gpt-4.1-mini
+  use_repo_map: true
 
