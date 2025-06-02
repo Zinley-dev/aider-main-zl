@@ -386,10 +386,6 @@ class InputOutput:
                     # Try creating a style to validate the color
                     RichStyle(color=color_value)
                 except ColorParseError as e:
-                    self.console.print(
-                        "[bold red]Warning:[/bold red] Invalid configuration for"
-                        f" {attr_name}: '{color_value}'. {e}. Disabling this color."
-                    )
                     setattr(self, attr_name, None)  # Reset invalid color to None
 
     def _get_style(self):
@@ -962,18 +958,18 @@ class InputOutput:
                 hist = message.strip() if strip else message
                 self.append_chat_history(hist, linebreak=True, blockquote=True)
 
-        if not isinstance(message, Text):
-            message = Text(message)
-        color = ensure_hash_prefix(color) if color else None
-        style = dict(style=color) if self.pretty and color else dict()
-        try:
-            self.console.print(message, **style)
-        except UnicodeEncodeError:
-            # Fallback to ASCII-safe output
-            if isinstance(message, Text):
-                message = message.plain
-            message = str(message).encode("ascii", errors="replace").decode("ascii")
-            #self.console.print(message, **style)
+        # if not isinstance(message, Text):
+        #     message = Text(message)
+        # color = ensure_hash_prefix(color) if color else None
+        # style = dict(style=color) if self.pretty and color else dict()
+        # try:
+        #     #self.console.print(message, **style)
+        # except UnicodeEncodeError:
+        #     # Fallback to ASCII-safe output
+        #     if isinstance(message, Text):
+        #         message = message.plain
+        #     message = str(message).encode("ascii", errors="replace").decode("ascii")
+        #     #self.console.print(message, **style)
 
     def tool_error(self, message="", strip=True):
         self.num_error_outputs += 1
@@ -1151,7 +1147,7 @@ class InputOutput:
             read_only_output = StringIO()
             Console(file=read_only_output, force_terminal=False).print(Columns(files_with_label))
             read_only_lines = read_only_output.getvalue().splitlines()
-            console.print(Columns(files_with_label))
+            #console.print(Columns(files_with_label))
 
         if editable_files:
             text_editable_files = [Text(f) for f in editable_files]
@@ -1164,7 +1160,7 @@ class InputOutput:
 
                 if len(read_only_lines) > 1 or len(editable_lines) > 1:
                     console.print()
-            console.print(Columns(files_with_label))
+            #console.print(Columns(files_with_label))
 
         return output.getvalue()
 
