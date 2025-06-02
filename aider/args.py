@@ -408,7 +408,7 @@ def get_parser(default_config_files, git_root):
         "--gitignore",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Enable/disable adding .aider* to .gitignore (default: True)",
+        help="Enable/disable adding to .gitignore (default: True)",
     )
     default_aiderignore_file = (
         os.path.join(git_root, ".aiderignore") if git_root else ".aiderignore"

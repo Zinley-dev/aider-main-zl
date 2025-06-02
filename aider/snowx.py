@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Generator
 import requests
 
 from aider.dump import dump  # noqa: F401
+from aider.models import model_info_manager
 
 
 class SnowXStreamHandler:
@@ -252,11 +253,23 @@ class SnowXClient:
         if max_tokens:
             request_body["max_tokens"] = max_tokens
         else:
-            # Default based on model
-            if model.startswith("snowx/o4-mini"):
-                request_body["max_completion_tokens"] = 100000
-            else:
-                request_body["max_tokens"] = 4096
+            # Get model info from metadata
+            try:
+                model_info = model_info_manager.get_model_info(model)
+                default_max_tokens = model_info.get("max_tokens") or model_info.get("max_output_tokens")
+                
+                # Special handling for o4-mini models
+                if model.startswith("snowx/o4-mini"):
+                    # o4-mini uses max_completion_tokens instead of max_tokens
+                    request_body["max_completion_tokens"] = default_max_tokens or 100000
+                else:
+                    request_body["max_tokens"] = default_max_tokens or 4096
+            except Exception:
+                # Fallback to hardcoded defaults if model info not found
+                if model.startswith("snowx/o4-mini"):
+                    request_body["max_completion_tokens"] = 100000
+                else:
+                    request_body["max_tokens"] = 4096
                 
         # Handle o4-mini specific parameters
         if model != "snowx/o4-mini" and model != "snowx/o4-mini-high":
