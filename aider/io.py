@@ -525,14 +525,7 @@ class InputOutput:
         # Ring the bell if needed
         self.ring_bell()
 
-        rel_fnames = list(rel_fnames)
-        show = ""
-        if rel_fnames:
-            rel_read_only_fnames = [
-                get_rel_fname(fname, root) for fname in (abs_read_only_fnames or [])
-            ]
-            show = self.format_files_for_input(rel_fnames, rel_read_only_fnames)
-
+        # Initialize prompt prefix
         prompt_prefix = ""
         if edit_format:
             prompt_prefix += edit_format
@@ -540,7 +533,7 @@ class InputOutput:
             prompt_prefix += (" " if edit_format else "") + "multi"
         prompt_prefix += "[Done]"
 
-        show += prompt_prefix
+        show = prompt_prefix
         self.prompt_prefix = prompt_prefix
 
         inp = ""
