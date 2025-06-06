@@ -1835,8 +1835,6 @@
   use_temperature: false
   examples_as_sys_msg: true
   reasoning_tag: think
-  supports_assistant_prefill: true
-  supports_prompt_caching: true
 
 - name: snowx/deepseek-v3
   edit_format: diff
@@ -1844,6 +1842,4 @@
   use_repo_map: true
   reminder: sys
   examples_as_sys_msg: true
-  supports_assistant_prefill: true
-  supports_prompt_caching: true
 
