@@ -1773,6 +1773,8 @@
   editor_model_name: snowx/claude-sonnet-4
   editor_edit_format: editor-diff
   accepts_settings: ["thinking_tokens"]
+  extra_params:
+    max_tokens: 32000
 
 - name: snowx/claude-sonnet-4
   edit_format: diff
@@ -1780,6 +1782,8 @@
   use_repo_map: true
   editor_edit_format: editor-diff
   accepts_settings: ["thinking_tokens"]
+  extra_params:
+    max_tokens: 64000
 
 - name: snowx/claude-3-7-sonnet
   edit_format: diff
@@ -1787,6 +1791,8 @@
   use_repo_map: true
   examples_as_sys_msg: true
   accepts_settings: ["thinking_tokens"]
+  extra_params:
+    max_tokens: 64000
 
 - name: snowx/claude-3-5-sonnet
   edit_format: diff
