@@ -1785,7 +1785,7 @@
   accepts_settings: ["thinking_tokens"]
   examples_as_sys_msg: false
   extra_params:
-    max_tokens: 64000
+    max_tokens: 32000
 
 - name: snowx/claude-3-7-sonnet
   edit_format: diff
