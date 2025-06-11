@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     SESSION_TIMEOUT: int = 3600  # 1 giờ (3600 giây)
     
     # Model Settings
-    DEFAULT_MODEL: str = "gpt-4o"
+    DEFAULT_MODEL: str = "snowx/gpt-4o"
     
     # API Keys - sẽ được load từ environment variables
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")

@@ -1,4 +1,5 @@
 from aider.io import InputOutput
+import os
 
 class ApiInputOutput(InputOutput):
     """
@@ -7,7 +8,7 @@ class ApiInputOutput(InputOutput):
     """
     
     def __init__(self):
-        super().__init__(yes=True, pretty=False)
+        super().__init__(yes=True, pretty=False, dry_run=False)
         self.output_buffer = []
         self.error_buffer = []
         self.warning_buffer = []
@@ -31,7 +32,7 @@ class ApiInputOutput(InputOutput):
     def user_input(self, msg):
         """Override user input - không cần input từ user trong API"""
         self.output_buffer.append(f"User: {msg}")
-        super().user_input(msg)
+        return ""  # Trả về empty string thay vì gọi super()
     
     def ai_output(self, msg, pretty=None):
         """Capture AI output"""
@@ -56,6 +57,40 @@ class ApiInputOutput(InputOutput):
         """
         self.output_buffer.append(f"Auto-confirmed: {question}")
         return True
+    
+    def write_text(self, filename, content, encoding="utf-8"):
+        """
+        Override write_text để đảm bảo file được ghi thực tế
+        """
+        try:
+            # Ghi file trực tiếp
+            with open(filename, 'w', encoding=encoding) as f:
+                f.write(content)
+            self.tool_output(f"✅ Successfully wrote file: {filename}")
+            print(f"✅ API: Wrote file {filename} ({len(content)} chars)")
+            return True
+        except Exception as e:
+            self.tool_error(f"❌ Failed to write file {filename}: {e}")
+            print(f"❌ API: Failed to write file {filename}: {e}")
+            return False
+    
+    def read_text(self, filename, encoding="utf-8"):
+        """
+        Override read_text để đọc file thực tế
+        """
+        try:
+            if os.path.exists(filename):
+                with open(filename, 'r', encoding=encoding) as f:
+                    content = f.read()
+                print(f"📖 API: Read file {filename} ({len(content)} chars)")
+                return content
+            else:
+                print(f"⚠️ API: File not found: {filename}")
+                return None
+        except Exception as e:
+            self.tool_error(f"❌ Failed to read file {filename}: {e}")
+            print(f"❌ API: Failed to read file {filename}: {e}")
+            return None
     
     def get_captured_output(self):
         """Lấy tất cả output đã capture và clear buffer"""
