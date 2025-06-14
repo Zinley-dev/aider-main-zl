@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  api-server:
+    build: .
+    container_name: aider-api-server
+    ports:
+      - "8000:8000"
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_TITLE=Aider API Server
+      - API_VERSION=1.0.0
+      - DEFAULT_MODEL=gpt-4
+      - SESSION_TIMEOUT=3600
+    volumes:
+      # Mount temp directory for persistent sessions (optional)
+      - ./temp:/app/temp
+      # Mount .env file if exists
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - aider-network
+
+networks:
+  aider-network:
+    driver: bridge 

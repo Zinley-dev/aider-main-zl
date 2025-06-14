@@ -1,5 +1,9 @@
 from aider.io import InputOutput
 import os
+import asyncio
+import json
+from typing import AsyncGenerator
+import time
 
 class ApiInputOutput(InputOutput):
     """
@@ -122,4 +126,169 @@ class ApiInputOutput(InputOutput):
             "output": self.get_captured_output(),
             "errors": self.get_captured_errors(),
             "warnings": self.get_captured_warnings()
-        } 
+        }
+    
+    def start_streaming(self):
+        """Dummy method for compatibility - ApiInputOutput doesn't support streaming"""
+        pass
+    
+    def stop_streaming(self):
+        """Dummy method for compatibility - ApiInputOutput doesn't support streaming"""
+        pass
+    
+    async def get_stream_events(self):
+        """Dummy method for compatibility - ApiInputOutput doesn't support streaming"""
+        # Return empty generator
+        return
+        yield  # This line will never be reached, but makes it a generator
+
+
+class StreamingApiInputOutput(ApiInputOutput):
+    """
+    Streaming version của ApiInputOutput cho SSE
+    """
+    
+    def __init__(self):
+        super().__init__()
+        self.stream_queue = asyncio.Queue()
+        self.streaming = False
+    
+    def start_streaming(self):
+        """Bắt đầu streaming mode"""
+        self.streaming = True
+        self.clear_buffers()
+    
+    def stop_streaming(self):
+        """Dừng streaming mode"""
+        self.streaming = False
+    
+    async def emit_event(self, event_type: str, data: dict):
+        """Emit một SSE event"""
+        if self.streaming:
+            event = {
+                "type": event_type,
+                "data": data,
+                "timestamp": time.time()
+            }
+            await self.stream_queue.put(event)
+    
+    def tool_output(self, msg, log_only=False):
+        """Override để stream tool output"""
+        super().tool_output(msg, log_only)
+        if self.streaming and not log_only:
+            # Tạo event cho stream - sử dụng try/except để tránh lỗi event loop
+            try:
+                asyncio.create_task(self.emit_event("tool_output", {
+                    "message": str(msg)
+                }))
+            except RuntimeError:
+                # Không có event loop, thêm vào queue trực tiếp
+                self.stream_queue.put_nowait({
+                    "type": "tool_output",
+                    "data": {"message": str(msg)},
+                    "timestamp": time.time()
+                })
+    
+    def tool_error(self, msg):
+        """Override để stream tool errors"""
+        super().tool_error(msg)
+        if self.streaming:
+            try:
+                asyncio.create_task(self.emit_event("tool_error", {
+                    "message": str(msg)
+                }))
+            except RuntimeError:
+                self.stream_queue.put_nowait({
+                    "type": "tool_error",
+                    "data": {"message": str(msg)},
+                    "timestamp": time.time()
+                })
+    
+    def tool_warning(self, msg):
+        """Override để stream tool warnings"""
+        super().tool_warning(msg)
+        if self.streaming:
+            try:
+                asyncio.create_task(self.emit_event("tool_warning", {
+                    "message": str(msg)
+                }))
+            except RuntimeError:
+                self.stream_queue.put_nowait({
+                    "type": "tool_warning",
+                    "data": {"message": str(msg)},
+                    "timestamp": time.time()
+                })
+    
+    def ai_output(self, msg, pretty=None):
+        """Override để stream AI output"""
+        super().ai_output(msg, pretty)
+        if self.streaming:
+            try:
+                asyncio.create_task(self.emit_event("ai_output", {
+                    "message": str(msg)
+                }))
+            except RuntimeError:
+                self.stream_queue.put_nowait({
+                    "type": "ai_output",
+                    "data": {"message": str(msg)},
+                    "timestamp": time.time()
+                })
+    
+    def assistant_output(self, msg, pretty=None):
+        """Override để stream assistant output"""
+        super().assistant_output(msg, pretty)
+        if self.streaming:
+            try:
+                asyncio.create_task(self.emit_event("assistant_output", {
+                    "message": str(msg)
+                }))
+            except RuntimeError:
+                self.stream_queue.put_nowait({
+                    "type": "assistant_output",
+                    "data": {"message": str(msg)},
+                    "timestamp": time.time()
+                })
+    
+    def write_text(self, filename, content, encoding="utf-8"):
+        """Override để stream file write events"""
+        result = super().write_text(filename, content, encoding)
+        if self.streaming:
+            try:
+                asyncio.create_task(self.emit_event("file_write", {
+                    "filename": filename,
+                    "content_length": len(content),
+                    "success": result
+                }))
+            except RuntimeError:
+                self.stream_queue.put_nowait({
+                    "type": "file_write",
+                    "data": {
+                        "filename": filename,
+                        "content_length": len(content),
+                        "success": result
+                    },
+                    "timestamp": time.time()
+                })
+        return result
+    
+    async def get_stream_events(self) -> AsyncGenerator[dict, None]:
+        """Generator để lấy stream events"""
+        while self.streaming:
+            try:
+                # Đợi event với timeout
+                event = await asyncio.wait_for(self.stream_queue.get(), timeout=0.1)
+                yield event
+            except asyncio.TimeoutError:
+                # Gửi heartbeat event
+                yield {
+                    "type": "heartbeat",
+                    "data": {"status": "alive"},
+                    "timestamp": time.time()
+                }
+            except Exception as e:
+                yield {
+                    "type": "error",
+                    "data": {"message": str(e)},
+                    "timestamp": time.time()
+                }
+                break 

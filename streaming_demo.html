@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aider REST API Streaming Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        
+        .output-container {
+            margin-top: 30px;
+        }
+        
+        .output-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .event-line {
+            margin-bottom: 5px;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
+        .event-start { background-color: #d4edda; color: #155724; }
+        .event-info { background-color: #d1ecf1; color: #0c5460; }
+        .event-processing { background-color: #fff3cd; color: #856404; }
+        .event-tool_output { background-color: #e2e3e5; color: #383d41; }
+        .event-tool_error { background-color: #f8d7da; color: #721c24; }
+        .event-tool_warning { background-color: #ffeaa7; color: #856404; }
+        .event-ai_output { background-color: #cce5ff; color: #004085; }
+        .event-assistant_output { background-color: #e7f3ff; color: #004085; }
+        .event-file_write { background-color: #d4edda; color: #155724; }
+        .event-response { background-color: #f0f8ff; color: #0056b3; }
+        .event-complete { background-color: #d4edda; color: #155724; font-weight: bold; }
+        .event-heartbeat { background-color: #f8f9fa; color: #6c757d; }
+        .event-error { background-color: #f8d7da; color: #721c24; font-weight: bold; }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .status-idle { background-color: #e2e3e5; color: #383d41; }
+        .status-connecting { background-color: #fff3cd; color: #856404; }
+        .status-streaming { background-color: #d1ecf1; color: #0c5460; }
+        .status-complete { background-color: #d4edda; color: #155724; }
+        .status-error { background-color: #f8d7da; color: #721c24; }
+        
+        .result-summary {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .result-summary h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        
+        .result-item {
+            margin-bottom: 10px;
+        }
+        
+        .result-item strong {
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Aider REST API Streaming Demo</h1>
+        
+        <div class="form-group">
+            <label for="apiUrl">API Base URL:</label>
+            <input type="text" id="apiUrl" value="http://localhost:8000">
+        </div>
+        
+        <div class="form-group">
+            <label for="repoPath">Repository Path:</label>
+            <input type="text" id="repoPath" value="/Users/hoangnm/Desktop/test" placeholder="Absolute path to your project">
+        </div>
+        
+        <div class="form-group">
+            <label for="files">Files (comma-separated):</label>
+            <input type="text" id="files" value="index.html" placeholder="file1.js, file2.css, file3.html">
+        </div>
+        
+        <div class="form-group">
+            <label for="model">Model:</label>
+            <select id="model">
+                <option value="deepseek/deepseek-coder">DeepSeek Coder</option>
+                <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                <option value="gpt-4">GPT-4</option>
+                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="message">Message:</label>
+            <textarea id="message" placeholder="Enter your message to Aider...">Create a beautiful resume webpage with modern CSS styling, responsive design, and professional layout. Include sections for personal info, experience, skills, and education.</textarea>
+        </div>
+        
+        <div class="form-group">
+            <div class="checkbox-group">
+                <input type="checkbox" id="streaming" checked>
+                <label for="streaming">Enable Streaming (SSE)</label>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-primary" onclick="sendChat()">Send Chat</button>
+            <button class="btn-secondary" onclick="clearOutput()">Clear Output</button>
+            <button class="btn-danger" onclick="stopStreaming()">Stop Streaming</button>
+        </div>
+        
+        <div id="status" class="status status-idle">Status: Ready</div>
+        
+        <div class="output-container">
+            <h3>Output:</h3>
+            <div id="output" class="output-box"></div>
+        </div>
+        
+        <div id="resultSummary" class="result-summary" style="display: none;">
+            <h3>Result Summary</h3>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let currentSessionId = null;
+        
+        function updateStatus(message, className) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = `Status: ${message}`;
+            statusEl.className = `status ${className}`;
+        }
+        
+        function addOutputLine(message, eventType = 'info') {
+            const outputEl = document.getElementById('output');
+            const line = document.createElement('div');
+            line.className = `event-line event-${eventType}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            outputEl.appendChild(line);
+            outputEl.scrollTop = outputEl.scrollHeight;
+        }
+        
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '';
+            document.getElementById('resultSummary').style.display = 'none';
+        }
+        
+        function showResultSummary(result) {
+            const summaryEl = document.getElementById('resultSummary');
+            const contentEl = document.getElementById('resultContent');
+            
+            contentEl.innerHTML = `
+                <div class="result-item"><strong>Session ID:</strong> ${result.session_id || 'N/A'}</div>
+                <div class="result-item"><strong>Tokens Sent:</strong> ${result.tokens_sent || 0}</div>
+                <div class="result-item"><strong>Tokens Received:</strong> ${result.tokens_received || 0}</div>
+                <div class="result-item"><strong>Cost:</strong> $${(result.cost || 0).toFixed(4)}</div>
+                <div class="result-item"><strong>Edited Files:</strong> ${(result.edited_files || []).length}</div>
+                ${(result.edited_files || []).map(file => 
+                    `<div class="result-item">📄 <strong>${file.name}</strong> (${file.content.length} chars)</div>`
+                ).join('')}
+            `;
+            
+            summaryEl.style.display = 'block';
+        }
+        
+        async function createSession() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const repoPath = document.getElementById('repoPath').value;
+            const files = document.getElementById('files').value.split(',').map(f => f.trim()).filter(f => f);
+            const model = document.getElementById('model').value;
+            
+            try {
+                const response = await fetch(`${apiUrl}/sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        repo_path: repoPath,
+                        files: files,
+                        model: model
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const result = await response.json();
+                currentSessionId = result.session_id;
+                addOutputLine(`✅ Session created: ${currentSessionId}`, 'start');
+                return currentSessionId;
+                
+            } catch (error) {
+                addOutputLine(`❌ Failed to create session: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+        
+        function sendStreamingChat(sessionId) {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const message = document.getElementById('message').value;
+            
+            const chatData = {
+                message: message,
+                session_id: sessionId,
+                stream: true
+            };
+            
+            updateStatus('Connecting to stream...', 'status-connecting');
+            addOutputLine('🔄 Starting streaming chat...', 'processing');
+            
+            // Close existing connection
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            // Create new EventSource for streaming
+            eventSource = new EventSource(`${apiUrl}/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(chatData)
+            });
+            
+            // Sử dụng fetch với streaming thay vì EventSource vì EventSource không hỗ trợ POST
+            fetch(`${apiUrl}/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/event-stream',
+                    'Cache-Control': 'no-cache'
+                },
+                body: JSON.stringify(chatData)
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                updateStatus('Streaming...', 'status-streaming');
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                function readStream() {
+                    reader.read().then(({ done, value }) => {
+                        if (done) {
+                            updateStatus('Stream completed', 'status-complete');
+                            addOutputLine('🏁 Stream ended', 'complete');
+                            return;
+                        }
+                        
+                        const chunk = decoder.decode(value, { stream: true });
+                        const lines = chunk.split('\n');
+                        
+                        let currentEvent = null;
+                        
+                        for (const line of lines) {
+                            if (line.startsWith('event: ')) {
+                                currentEvent = line.substring(7);
+                            } else if (line.startsWith('data: ')) {
+                                const dataStr = line.substring(6);
+                                try {
+                                    const data = JSON.parse(dataStr);
+                                    handleStreamEvent(currentEvent, data);
+                                } catch (e) {
+                                    console.warn('Invalid JSON:', dataStr);
+                                }
+                            }
+                        }
+                        
+                        readStream();
+                    }).catch(error => {
+                        updateStatus('Stream error', 'status-error');
+                        addOutputLine(`💥 Stream error: ${error.message}`, 'error');
+                    });
+                }
+                
+                readStream();
+                
+            }).catch(error => {
+                updateStatus('Connection failed', 'status-error');
+                addOutputLine(`❌ Connection failed: ${error.message}`, 'error');
+            });
+        }
+        
+        function handleStreamEvent(eventType, data) {
+            switch (eventType) {
+                case 'start':
+                    addOutputLine(`🟢 ${data.message}`, 'start');
+                    break;
+                case 'info':
+                    addOutputLine(`ℹ️ ${data.message}`, 'info');
+                    break;
+                case 'processing':
+                    addOutputLine(`⚙️ ${data.message}`, 'processing');
+                    break;
+                case 'tool_output':
+                    addOutputLine(`🔧 Tool: ${data.message}`, 'tool_output');
+                    break;
+                case 'tool_error':
+                    addOutputLine(`❌ Tool Error: ${data.message}`, 'tool_error');
+                    break;
+                case 'tool_warning':
+                    addOutputLine(`⚠️ Tool Warning: ${data.message}`, 'tool_warning');
+                    break;
+                case 'ai_output':
+                    addOutputLine(`🤖 AI: ${data.message}`, 'ai_output');
+                    break;
+                case 'assistant_output':
+                    addOutputLine(`👨‍💻 Assistant: ${data.message}`, 'assistant_output');
+                    break;
+                case 'file_write':
+                    const status = data.success ? '✅' : '❌';
+                    addOutputLine(`${status} File Write: ${data.filename} (${data.content_length} chars)`, 'file_write');
+                    break;
+                case 'response':
+                    const preview = data.message.length > 100 ? data.message.substring(0, 100) + '...' : data.message;
+                    addOutputLine(`💬 Response: ${preview}`, 'response');
+                    break;
+                case 'complete':
+                    addOutputLine('🎉 Complete!', 'complete');
+                    updateStatus('Completed', 'status-complete');
+                    showResultSummary(data);
+                    break;
+                case 'heartbeat':
+                    addOutputLine('💓 Heartbeat', 'heartbeat');
+                    break;
+                case 'error':
+                    addOutputLine(`💥 Error: ${data.message}`, 'error');
+                    updateStatus('Error occurred', 'status-error');
+                    break;
+                default:
+                    addOutputLine(`📝 ${eventType}: ${JSON.stringify(data)}`, 'info');
+            }
+        }
+        
+        async function sendNonStreamingChat(sessionId) {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const message = document.getElementById('message').value;
+            
+            const chatData = {
+                message: message,
+                session_id: sessionId,
+                stream: false
+            };
+            
+            updateStatus('Sending request...', 'status-connecting');
+            addOutputLine('⏳ Sending non-streaming request...', 'processing');
+            
+            try {
+                const response = await fetch(`${apiUrl}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(chatData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const result = await response.json();
+                
+                updateStatus('Completed', 'status-complete');
+                addOutputLine('✅ Response received', 'complete');
+                addOutputLine(`💬 Response: ${result.response.substring(0, 200)}...`, 'response');
+                
+                showResultSummary(result);
+                
+            } catch (error) {
+                updateStatus('Request failed', 'status-error');
+                addOutputLine(`❌ Request failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function sendChat() {
+            const streaming = document.getElementById('streaming').checked;
+            
+            try {
+                // Tạo session nếu chưa có
+                if (!currentSessionId) {
+                    await createSession();
+                }
+                
+                if (streaming) {
+                    sendStreamingChat(currentSessionId);
+                } else {
+                    await sendNonStreamingChat(currentSessionId);
+                }
+                
+            } catch (error) {
+                updateStatus('Failed', 'status-error');
+                addOutputLine(`❌ Failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function stopStreaming() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            updateStatus('Stopped', 'status-idle');
+            addOutputLine('⏹️ Streaming stopped by user', 'info');
+        }
+        
+        // Initialize
+        updateStatus('Ready', 'status-idle');
+        addOutputLine('🚀 Aider REST API Streaming Demo initialized', 'start');
+    </script>
+</body>
+</html> 
