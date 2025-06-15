@@ -677,6 +677,12 @@ async def create_session(session_request: SessionRequest):
     try:
         # Nếu không có repo_path, tạo thư mục mới với UUID trong folder temp
         repo_path = session_request.repo_path
+        files = session_request.files or []
+        
+        # Nếu không có repo_path và không có files, dùng mặc định ["index.html"]
+        if not repo_path and not files:
+            files = ["index.html"]
+            
         if not repo_path:
             # Tạo thư mục mới với tên UUID trong ./temp
             folder_name = str(uuid.uuid4())
@@ -698,7 +704,7 @@ async def create_session(session_request: SessionRequest):
         _, session_id = get_or_create_session(
             repo_path=repo_path,
             model=session_request.model,
-            files=session_request.files,
+            files=files,
             read_only_files=session_request.read_only_files,
             edit_format=session_request.edit_format,
             auto_commits=session_request.auto_commits
@@ -708,7 +714,7 @@ async def create_session(session_request: SessionRequest):
             message="Session created successfully",
             repo_path=repo_path,
             model=session_request.model,
-            files=session_request.files or [],
+            files=files,
             read_only_files=session_request.read_only_files or []
         )
     except Exception as e:

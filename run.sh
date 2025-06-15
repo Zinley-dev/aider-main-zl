@@ -14,15 +14,12 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
-# Create temp directory if it doesn't exist
-if [ ! -d "./temp" ]; then
-    echo -e "${YELLOW}📁 Creating temp directory...${NC}"
-    mkdir -p ./temp
-fi
+# Note: Using Docker named volume for temp directory - no need to create local temp folder
 
-# Build and run with docker-compose
-echo -e "${GREEN}🔨 Building and starting containers...${NC}"
-docker-compose up --build
+# Pull and run with docker-compose
+echo -e "${GREEN}🔄 Pulling latest image and starting containers...${NC}"
+docker-compose pull
+docker-compose up
 
 echo -e "${GREEN}✅ Aider API Server is running!${NC}"
 echo -e "${GREEN}🌐 API Documentation: http://localhost:8000/docs${NC}"

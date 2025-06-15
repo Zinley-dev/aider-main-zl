@@ -16,9 +16,6 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Create temp directory for sessions
-RUN mkdir -p /app/temp
-
 # Copy requirements first for better caching
 COPY requirements.txt* ./
 COPY pyproject.toml* ./
@@ -26,7 +23,7 @@ COPY setup.py* ./
 
 # Install Python dependencies
 RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
-RUN pip install --no-cache-dir fastapi uvicorn[standard] python-multipart aiofiles
+RUN pip install --no-cache-dir fastapi uvicorn[standard] python-multipart aiofiles pydantic-settings
 
 # Install aider if not in requirements
 RUN pip install --no-cache-dir aider-chat
@@ -37,6 +34,12 @@ COPY . .
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash appuser && \
     chown -R appuser:appuser /app
+
+# Create temp directory for sessions with correct permissions
+RUN mkdir -p /app/temp && \
+    chown -R appuser:appuser /app/temp && \
+    chmod 755 /app/temp
+
 USER appuser
 
 # Expose port

@@ -533,4 +533,6 @@ python-multipart>=0.0.6
 aiofiles>=23.2.1
 aider-chat>=0.42.0
 pydantic>=2.5.0
+pydantic-settings>=2.0.0
 python-dotenv>=1.0.0
+requests>=2.31.0
