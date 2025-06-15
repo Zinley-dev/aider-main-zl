@@ -679,9 +679,9 @@ async def create_session(session_request: SessionRequest):
         repo_path = session_request.repo_path
         files = session_request.files or []
         
-        # Nếu không có repo_path và không có files, dùng mặc định ["index.html"]
+        # Nếu không có repo_path và không có files, dùng mặc định ["index.md"]
         if not repo_path and not files:
-            files = ["index.html"]
+            files = ["index.md"]
             
         if not repo_path:
             # Tạo thư mục mới với tên UUID trong ./temp
@@ -696,7 +696,7 @@ async def create_session(session_request: SessionRequest):
             print(f"Created new folder: {repo_path}")
             
             # Tạo file index.html rỗng
-            index_file = os.path.join(repo_path, "index.html")
+            index_file = os.path.join(repo_path, "index.md")
             with open(index_file, 'w', encoding='utf-8') as f:
                 f.write("")
             print(f"Created empty index.html: {index_file}")
