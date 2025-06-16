@@ -1,9 +1,9 @@
-name: Docker Release
+name: Docker Release API
 
 on:
   push:
     branches:
-      - doc-version
+      - api-version
     paths-ignore:
       - 'aider/website/**'
       - 'README.md'
@@ -40,7 +40,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/aider-main-zl
           tags: |
-            type=raw,value=docs
+            type=raw,value=latest
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
