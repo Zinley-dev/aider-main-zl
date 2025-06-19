@@ -41,8 +41,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-temp_dir = os.path.join(os.getcwd(), "temp")
-
 # Khởi tạo session manager
 session_manager = SessionManager(timeout=settings.SESSION_TIMEOUT)
 
@@ -108,26 +106,6 @@ class FileInfo(BaseModel):
 class ListFilesResponse(BaseModel):
     files: List[FileInfo]
     total_count: int
-
-class ClearChatResponse(BaseModel):
-    success: bool
-    message: str
-    cleared_messages: int
-
-class SyncFileRequest(BaseModel):
-    session_id: str
-    file_path: str
-    content: str
-    add_to_chat: bool = False
-    create_if_not_exists: bool = True
-
-class SyncFileResponse(BaseModel):
-    success: bool
-    message: str
-    file_path: str
-    file_size: int
-    was_created: bool
-    in_chat: bool
 
 # Hàm tiện ích để tạo và lấy session Aider
 def get_or_create_session(session_id: str = None, repo_path: str = None, model: str = None, files: List[str] = None, read_only_files: List[str] = None, edit_format: str = "whole", auto_commits: bool = True, use_streaming: bool = False):
@@ -299,25 +277,9 @@ async def chat_stream(request: ChatRequest) -> AsyncGenerator[str, None]:
         print(f"🔍 Coder files: {list(getattr(coder, 'abs_fnames', []))}")
         print(f"🔍 Edited files before: {list(getattr(coder, 'aider_edited_files', []))}")
         
-        # Kiểm tra xem có file ảnh nào trong session không
-        image_files_info = ""
-        if hasattr(coder, 'abs_read_only_fnames') and coder.abs_read_only_fnames:
-            image_files = []
-            for abs_path in coder.abs_read_only_fnames:
-                rel_path = coder.get_rel_fname(abs_path)
-                file_ext = os.path.splitext(rel_path)[1].lower()
-                if file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg']:
-                    image_files.append(rel_path)
-            
-            if image_files:
-                image_files_info = f"\n\nIMAGES AVAILABLE IN THIS SESSION:\n"
-                for img_file in image_files:
-                    image_files_info += f"- {img_file}\n"
-                image_files_info += "\nYou can reference these images when building the game/application.\n"
-
         # Chuẩn bị message
         enhanced_message = f"""
-{request.message}{image_files_info}
+{request.message}
 
 CRITICAL INSTRUCTIONS:
 1. You MUST edit the file(s) directly - do NOT just show code examples
@@ -325,7 +287,6 @@ CRITICAL INSTRUCTIONS:
 3. Do NOT provide explanations or additional text in your response
 4. ONLY return the updated file content, nothing else
 5. The files to edit are: {', '.join(request.files) if request.files else 'the files in this chat'}
-6. If there are images available in the session (listed above), use them as reference for building the game/application
 
 Edit the files now and return ONLY the updated content.
 """
@@ -452,7 +413,7 @@ async def chat_non_stream(request: ChatRequest) -> ChatResponse:
     Non-streaming chat (original logic)
     """
     original_cwd = os.getcwd()
-    print(f"🔍 Original cwd: {original_cwd}")
+    
     try:
         session, session_id = get_or_create_session(
             session_id=request.session_id, 
@@ -474,25 +435,9 @@ async def chat_non_stream(request: ChatRequest) -> ChatResponse:
         # Clear buffers trước khi xử lý
         io.clear_buffers()
         
-        # Kiểm tra xem có file ảnh nào trong session không
-        image_files_info = ""
-        if hasattr(coder, 'abs_read_only_fnames') and coder.abs_read_only_fnames:
-            image_files = []
-            for abs_path in coder.abs_read_only_fnames:
-                rel_path = coder.get_rel_fname(abs_path)
-                file_ext = os.path.splitext(rel_path)[1].lower()
-                if file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg']:
-                    image_files.append(rel_path)
-            
-            if image_files:
-                image_files_info = f"\n\nIMAGES AVAILABLE IN THIS SESSION:\n"
-                for img_file in image_files:
-                    image_files_info += f"- {img_file}\n"
-                image_files_info += "\nYou can reference these images when building the game/application.\n"
-
         # Chuẩn bị message với instruction rõ ràng
         enhanced_message = f"""
-{request.message}{image_files_info}
+{request.message}
 
 CRITICAL INSTRUCTIONS:
 1. You MUST edit the file(s) directly - do NOT just show code examples
@@ -500,7 +445,6 @@ CRITICAL INSTRUCTIONS:
 3. Do NOT provide explanations or additional text in your response
 4. ONLY return the updated file content, nothing else
 5. The files to edit are: {', '.join(request.files) if request.files else 'the files in this chat'}
-6. If there are images available in the session (listed above), use them as reference for building the game/application
 
 Edit the files now and return ONLY the updated content.
 """
@@ -763,6 +707,7 @@ async def create_session(session_request: SessionRequest):
         if not repo_path:
             # Tạo thư mục mới với tên UUID trong ./temp
             folder_name = str(uuid.uuid4())
+            temp_dir = os.path.join(os.getcwd(), "temp")
             repo_path = os.path.join(temp_dir, folder_name)
             
             # Tạo thư mục temp nếu chưa có
@@ -923,28 +868,15 @@ async def upload_file(
         if add_to_chat:
             try:
                 coder = session["coder"]
+                # Chỉ thêm các file text vào chat (không phải binary files)
+                text_extensions = ['.txt', '.md', '.py', '.js', '.html', '.css', '.json', '.xml', '.yaml', '.yml', '.csv']
                 file_ext = os.path.splitext(file.filename)[1].lower()
                 
-                # Thêm file text vào chat
-                text_extensions = ['.txt', '.md', '.py', '.js', '.html', '.css', '.json', '.xml', '.yaml', '.yml', '.csv']
                 if file_ext in text_extensions:
                     coder.add_rel_fname(relative_path)
-                    print(f"📝 Added text file {relative_path} to chat session")
-                
-                # Thêm file ảnh vào read-only files để AI biết có ảnh
-                image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg']
-                if file_ext in image_extensions:
-                    abs_path = os.path.abspath(file_path)
-                    coder.abs_read_only_fnames.add(abs_path)
-                    print(f"🖼️ Added image file {relative_path} to chat session as read-only")
-                
-                # Các file khác cũng có thể thêm vào read-only
-                other_extensions = ['.pdf', '.doc', '.docx']
-                if file_ext in other_extensions:
-                    abs_path = os.path.abspath(file_path)
-                    coder.abs_read_only_fnames.add(abs_path)
-                    print(f"📎 Added document file {relative_path} to chat session as read-only")
-                    
+                    print(f"📝 Added {relative_path} to chat session")
+                else:
+                    print(f"📎 File {relative_path} uploaded but not added to chat (binary file)")
             except Exception as e:
                 print(f"⚠️ Failed to add file to chat: {e}")
         
@@ -1030,153 +962,6 @@ async def list_files(session_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"List files failed: {str(e)}")
-
-@app.post("/sessions/{session_id}/clear_chat", response_model=ClearChatResponse)
-async def clear_chat_history(session_id: str):
-    """
-    Clear chat history của session (giống /clear command)
-    Giữ nguyên files và settings, chỉ xóa conversation history
-    """
-    try:
-        # Kiểm tra session có tồn tại không
-        session = session_manager.get_session(session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
-        
-        # Lấy coder từ session
-        coder = session["coder"]
-        
-        # Đếm số message trước khi clear
-        total_messages = len(getattr(coder, 'done_messages', [])) + len(getattr(coder, 'cur_messages', []))
-        
-        # Clear chat history giống như /clear command
-        coder.done_messages = []
-        coder.cur_messages = []
-        
-        # Clear buffers trong IO
-        io = session["io"]
-        if hasattr(io, 'clear_buffers'):
-            io.clear_buffers()
-        
-        # Reset commit hashes để tránh conflict với undo
-        if hasattr(coder, 'aider_commit_hashes'):
-            coder.aider_commit_hashes = set()
-        
-        print(f"🧹 Cleared chat history for session {session_id} ({total_messages} messages)")
-        
-        return ClearChatResponse(
-            success=True,
-            message="Chat history cleared successfully. The AI can't see anything before this point.",
-            cleared_messages=total_messages
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Clear chat failed: {str(e)}")
-
-@app.post("/sync_file", response_model=SyncFileResponse)
-async def sync_file_content(request: SyncFileRequest):
-    """
-    Đồng bộ nội dung file trong repo_path của session
-    Cho phép update hoặc tạo mới file với content từ body request
-    """
-    try:
-        # Kiểm tra session có tồn tại không
-        session = session_manager.get_session(request.session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
-        
-        # Lấy repo_path từ session
-        repo_path = session.get("repo_path")
-        if not repo_path or not os.path.exists(repo_path):
-            raise HTTPException(status_code=400, detail="Session repo_path not found or invalid")
-        
-        # Tạo đường dẫn file đầy đủ
-        file_path = os.path.join(repo_path, request.file_path)
-        
-        # Kiểm tra file có nằm trong repo_path không (security check)
-        try:
-            # Resolve để tránh path traversal attacks
-            resolved_file_path = os.path.realpath(file_path)
-            resolved_repo_path = os.path.realpath(repo_path)
-            
-            if not resolved_file_path.startswith(resolved_repo_path):
-                raise HTTPException(status_code=400, detail="File path must be within session repo directory")
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid file path")
-        
-        # Kiểm tra file có tồn tại không
-        file_exists = os.path.exists(file_path)
-        was_created = False
-        
-        if not file_exists and not request.create_if_not_exists:
-            raise HTTPException(status_code=404, detail=f"File {request.file_path} not found and create_if_not_exists is False")
-        
-        # Tạo thư mục parent nếu cần
-        parent_dir = os.path.dirname(file_path)
-        if parent_dir and not os.path.exists(parent_dir):
-            os.makedirs(parent_dir, exist_ok=True)
-            print(f"📁 Created directory: {parent_dir}")
-        
-        # Ghi nội dung vào file
-        try:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(request.content)
-            
-            if not file_exists:
-                was_created = True
-                print(f"📝 Created new file: {request.file_path}")
-            else:
-                print(f"✏️ Updated existing file: {request.file_path}")
-                
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to write file: {str(e)}")
-        
-        # Lấy thông tin file
-        file_size = os.path.getsize(file_path)
-        
-        # Kiểm tra file có trong chat session không
-        coder = session["coder"]
-        in_chat = False
-        if hasattr(coder, 'abs_fnames'):
-            abs_file_path = os.path.abspath(file_path)
-            in_chat = abs_file_path in coder.abs_fnames
-        
-        # Thêm file vào chat session nếu được yêu cầu
-        if request.add_to_chat and not in_chat:
-            try:
-                file_ext = os.path.splitext(request.file_path)[1].lower()
-                
-                # Thêm file text vào chat
-                text_extensions = ['.txt', '.md', '.py', '.js', '.html', '.css', '.json', '.xml', '.yaml', '.yml', '.csv', '.ts', '.jsx', '.tsx']
-                if file_ext in text_extensions:
-                    coder.add_rel_fname(request.file_path)
-                    in_chat = True
-                    print(f"📝 Added {request.file_path} to chat session")
-                else:
-                    # Thêm file khác vào read-only
-                    abs_path = os.path.abspath(file_path)
-                    coder.abs_read_only_fnames.add(abs_path)
-                    in_chat = True
-                    print(f"📎 Added {request.file_path} to chat session as read-only")
-                    
-            except Exception as e:
-                print(f"⚠️ Failed to add file to chat: {e}")
-        
-        return SyncFileResponse(
-            success=True,
-            message=f"File {'created' if was_created else 'updated'} successfully: {request.file_path}",
-            file_path=request.file_path,
-            file_size=file_size,
-            was_created=was_created,
-            in_chat=in_chat
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Sync file failed: {str(e)}")
 
 @app.get("/health")
 async def health_check():
