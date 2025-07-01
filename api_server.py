@@ -17,7 +17,6 @@ from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 import functools
 import re
-import csv
 from io import StringIO
 
 from aider.coders import Coder
@@ -97,9 +96,9 @@ def parse_and_apply_search_replace(response: str, file_path: str) -> str:
     Uses aider's built-in editblock_coder functions for better compatibility
     Returns the final modified file content
     
-    Special handling for CSV files:
-    - Validates CSV structure before and after edits
-    - Preserves proper CSV formatting and encoding
+    Special handling for JSON files:
+- Validates JSON structure before and after edits
+- Preserves proper JSON formatting and encoding
     - Handles headers and data consistency
     """
     
@@ -214,9 +213,9 @@ def parse_and_apply_search_replace(response: str, file_path: str) -> str:
                 print(f"❌ Error applying edit {i}: {replace_error}")
                 continue
         
-        # Special handling for CSV files
-        if file_path.lower().endswith('.csv'):
-            final_content = validate_and_format_csv(final_content, file_path)
+        # Special handling for JSON files
+        if file_path.lower().endswith('.json'):
+            final_content = validate_and_format_json(final_content, file_path)
             
         return final_content
         
@@ -227,61 +226,39 @@ def parse_and_apply_search_replace(response: str, file_path: str) -> str:
         print(f"Traceback: {traceback.format_exc()}")
         return content
 
-def validate_and_format_csv(content: str, file_path: str) -> str:
+def validate_and_format_json(content: str, file_path: str) -> str:
     """
-    Validate and format CSV content to ensure proper structure
+    Validate and format JSON content to ensure proper structure
     """
     if not content.strip():
         return content
         
     try:
-        # Parse CSV to validate structure
-        csv_reader = csv.reader(StringIO(content))
-        rows = list(csv_reader)
+        # Parse JSON to validate structure
+        json_data = json.loads(content)
         
-        if not rows:
-            return content
+        # Reformat JSON with proper indentation and structure
+        formatted_content = json.dumps(json_data, indent=2, ensure_ascii=False, separators=(',', ': '))
+        
+        # Determine structure type for logging
+        structure_info = ""
+        if isinstance(json_data, dict):
+            structure_info = f"object with {len(json_data)} keys"
+        elif isinstance(json_data, list):
+            structure_info = f"array with {len(json_data)} items"
+        else:
+            structure_info = f"{type(json_data).__name__} value"
             
-        # Check for consistent column count
-        if len(rows) > 1:
-            header_cols = len(rows[0])
-            inconsistent_rows = []
-            
-            for i, row in enumerate(rows[1:], 1):
-                if len(row) != header_cols:
-                    inconsistent_rows.append(i)
-            
-            if inconsistent_rows:
-                print(f"⚠️ CSV Warning: Inconsistent column count in rows {inconsistent_rows}")
-        
-        # Reformat CSV with proper quoting and structure
-        output = StringIO()
-        csv_writer = csv.writer(output, quoting=csv.QUOTE_MINIMAL)
-        
-        for row in rows:
-            # Clean up each cell
-            cleaned_row = []
-            for cell in row:
-                # Remove extra whitespace but preserve intentional spaces
-                cleaned_cell = cell.strip() if isinstance(cell, str) else str(cell)
-                cleaned_row.append(cleaned_cell)
-            csv_writer.writerow(cleaned_row)
-        
-        formatted_content = output.getvalue()
-        
-        # Ensure proper line endings
-        formatted_content = formatted_content.replace('\r\n', '\n').replace('\r', '\n')
-        
-        # Remove trailing newline if present
-        if formatted_content.endswith('\n'):
-            formatted_content = formatted_content[:-1]
-            
-        print(f"✅ CSV validated and formatted: {len(rows)} rows, {len(rows[0]) if rows else 0} columns")
+        print(f"✅ JSON validated and formatted: {structure_info}")
         return formatted_content
         
-    except Exception as e:
-        print(f"⚠️ CSV validation failed: {e}")
+    except json.JSONDecodeError as e:
+        print(f"⚠️ JSON validation failed: {e}")
         # Return original content if validation fails
+        return content
+    except Exception as e:
+        print(f"⚠️ JSON formatting failed: {e}")
+        # Return original content if formatting fails
         return content
 
 # Tạo API app
@@ -821,7 +798,7 @@ async def chat_non_stream(request: ChatRequest) -> ChatResponse:
                 image_files_info += "\nYou can reference these images when building the game/application.\n"
 
         # Chuẩn bị message với instruction rõ ràng hơn
-        target_files = ', '.join(request.files) if request.files else 'index.csv'
+        target_files = ', '.join(request.files) if request.files else 'index.json'
         enhanced_message = f"""
 {request.message}{image_files_info}
 
@@ -833,24 +810,41 @@ CRITICAL INSTRUCTIONS - YOU MUST FOLLOW THESE EXACTLY:
 5. Make sure the code is fully functional and ready to run
 6. Do NOT provide explanations - just edit the files
 
-CSV FILE SPECIFIC INSTRUCTIONS:
-- Always ensure CSV files have proper structure with headers
-- Use consistent delimiter (comma by default)
-- Handle text fields with quotes when necessary (for fields containing commas or newlines)
+JSON FILE SPECIFIC INSTRUCTIONS:
+- Always ensure JSON files have proper structure and valid syntax
+- Use consistent indentation (2 spaces) for readability
+- Handle nested objects and arrays appropriately
 - Maintain proper UTF-8 encoding for international characters
-- Validate data types for each column (numbers, dates, text)
-- Keep consistent formatting for dates (YYYY-MM-DD) and numbers
-- Handle empty cells appropriately (leave blank or use appropriate default)
-- Ensure no trailing commas or extra empty rows
-- For large CSV operations, consider memory-efficient processing
-- When modifying CSV, preserve existing structure unless explicitly requested to change
-- Always validate CSV format after modifications
+- Validate data types (strings, numbers, booleans, arrays, objects, null)
+- Keep consistent formatting for dates (ISO 8601: "YYYY-MM-DDTHH:mm:ssZ")
+- Handle null values appropriately (use null instead of empty strings when appropriate)
+- Ensure proper escaping of special characters in strings
+- For large JSON operations, consider memory-efficient processing
+- When modifying JSON, preserve existing structure unless explicitly requested to change
+- Always validate JSON format after modifications
 
-EXAMPLE CSV STRUCTURE:
-```
-id,name,email,age,created_date
-1,"John Doe",john@example.com,25,2024-01-15
-2,"Jane Smith",jane@example.com,30,2024-01-16
+EXAMPLE JSON STRUCTURE:
+```json
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com",
+      "age": 25,
+      "created_date": "2024-01-15T00:00:00Z",
+      "active": true
+    },
+    {
+      "id": 2,
+      "name": "Jane Smith", 
+      "email": "jane@example.com",
+      "age": 30,
+      "created_date": "2024-01-16T00:00:00Z",
+      "active": true
+    }
+  ]
+}
 ```
 
 Current working directory: {os.getcwd()}
@@ -1250,7 +1244,7 @@ async def create_session(session_request: SessionRequest):
         
         # Nếu không có repo_path và không có files, dùng mặc định ["index.html"]
         if not repo_path and not files:
-            files = ["index.csv"]
+            files = ["index.json"]
             
         if not repo_path:
             # Tạo thư mục mới với tên UUID trong ./temp
@@ -1264,10 +1258,10 @@ async def create_session(session_request: SessionRequest):
             print(f"Created new folder: {repo_path}")
             
             # Tạo file index.html rỗng
-            index_file = os.path.join(repo_path, "index.csv")
+            index_file = os.path.join(repo_path, "index.json")
             with open(index_file, 'w', encoding='utf-8') as f:
                 f.write("")
-            print(f"Created empty index.csv: {index_file}")
+            print(f"Created empty index.json: {index_file}")
         
         _, session_id = await get_or_create_session(
             repo_path=repo_path,
