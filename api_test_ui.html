@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aider API Test UI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        
+        .section h2 {
+            color: #007bff;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .response {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .session-info {
+            background-color: #e2f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .session-info strong {
+            color: #004085;
+        }
+        
+        .file-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .file-list li {
+            background-color: #e9ecef;
+            margin: 5px 0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .file-list li:hover {
+            background-color: #dee2e6;
+        }
+        
+        .loading {
+            color: #007bff;
+            font-style: italic;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .stream-container {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        
+        .stream-event {
+            margin-bottom: 5px;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
+        .stream-event.start { background-color: #d4edda; }
+        .stream-event.processing { background-color: #fff3cd; }
+        .stream-event.response { background-color: #cce5ff; }
+        .stream-event.error { background-color: #f8d7da; }
+        .stream-event.complete { background-color: #d1ecf1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Aider API Test UI</h1>
+        
+        <!-- API Configuration -->
+        <div class="section">
+            <h2>⚙️ API Configuration</h2>
+            <div class="form-group">
+                <label for="apiUrl">API Base URL:</label>
+                <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
+            </div>
+        </div>
+        
+        <div class="grid">
+            <!-- Session Management -->
+            <div class="section">
+                <h2>📁 Session Management</h2>
+                
+                <div class="form-group">
+                    <label for="model">Model:</label>
+                    <select id="model">
+                        <option value="snowx/gpt-4o">gpt-4o</option>
+                        <option value="snowx/gpt-4.1">gpt-4.1</option>
+                        <option value="snowx/claude-sonnet-4">claude-4-sonnet</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="repoPath">Repository Path (optional):</label>
+                    <input type="text" id="repoPath" placeholder="Leave empty to create temp folder">
+                </div>
+                
+                <div class="form-group">
+                    <label for="files">Files (comma-separated):</label>
+                    <input type="text" id="files" value="index.html" placeholder="index.html, script.js, style.css">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editFormat">Edit Format:</label>
+                    <select id="editFormat">
+                        <option value="diff">diff</option>
+                        <option value="whole">whole</option>
+                        <option value="udiff">udiff</option>
+                    </select>
+                </div>
+                
+                <button onclick="createSession()">Create Session</button>
+                
+                <div id="sessionInfo" class="session-info" style="display: none;">
+                    <strong>Session ID:</strong> <span id="currentSessionId"></span><br>
+                    <strong>Repository:</strong> <span id="currentRepoPath"></span><br>
+                    <strong>Model:</strong> <span id="currentModel"></span>
+                </div>
+                
+                <div id="sessionResponse" class="response" style="display: none;"></div>
+            </div>
+            
+            <!-- Chat Interface -->
+            <div class="section">
+                <h2>💬 Chat Interface</h2>
+                
+                <div class="form-group">
+                    <label for="chatMessage">Message:</label>
+                    <textarea id="chatMessage" placeholder="Enter your message to Aider...">Create a simple HTML page with a button that shows an alert when clicked</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="streamResponse"> Enable Streaming
+                    </label>
+                </div>
+                
+                <button onclick="sendChat()" id="chatBtn">Send Message</button>
+                
+                <div id="chatResponse" class="response" style="display: none;"></div>
+                
+                <!-- Streaming Container -->
+                <div id="streamContainer" class="stream-container" style="display: none;">
+                    <div id="streamEvents"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- File Management -->
+        <div class="section">
+            <h2>📄 File Management</h2>
+            
+            <div class="grid">
+                <div>
+                    <h3>Files in Session</h3>
+                    <button onclick="getFiles()">Refresh File List</button>
+                    <ul id="fileList" class="file-list"></ul>
+                </div>
+                
+                <div>
+                    <h3>File Content</h3>
+                    <div class="form-group">
+                        <label for="selectedFile">Selected File:</label>
+                        <input type="text" id="selectedFile" placeholder="Click a file from the list">
+                    </div>
+                    <button onclick="getFileContent()">Get Content</button>
+                    <div id="fileContent" class="response" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- API Status -->
+        <div class="section">
+            <h2>🔍 API Status</h2>
+            <button onclick="checkHealth()">Check Health</button>
+            <button onclick="getModels()">Get Available Models</button>
+            <div id="statusResponse" class="response" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let eventSource = null;
+        
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value.trim();
+        }
+        
+        function showResponse(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `response ${isError ? 'error' : 'success'}`;
+            element.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        }
+        
+        async function createSession() {
+            const model = document.getElementById('model').value;
+            const repoPath = document.getElementById('repoPath').value.trim();
+            const filesInput = document.getElementById('files').value.trim();
+            const editFormat = document.getElementById('editFormat').value;
+            
+            const files = filesInput ? filesInput.split(',').map(f => f.trim()) : [];
+            
+            const requestData = {
+                model: model,
+                files: files,
+                edit_format: editFormat,
+                auto_commits: false
+            };
+            
+            if (repoPath) {
+                requestData.repo_path = repoPath;
+            }
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentSessionId = data.session_id;
+                    
+                    // Update session info display
+                    document.getElementById('currentSessionId').textContent = data.session_id;
+                    document.getElementById('currentRepoPath').textContent = data.repo_path || 'N/A';
+                    document.getElementById('currentModel').textContent = data.model;
+                    document.getElementById('sessionInfo').style.display = 'block';
+                    
+                    showResponse('sessionResponse', data);
+                    
+                    // Auto-refresh file list
+                    getFiles();
+                } else {
+                    showResponse('sessionResponse', data, true);
+                }
+            } catch (error) {
+                showResponse('sessionResponse', `Error: ${error.message}`, true);
+            }
+        }
+        
+        async function sendChat() {
+            if (!currentSessionId) {
+                alert('Please create a session first!');
+                return;
+            }
+            
+            const message = document.getElementById('chatMessage').value.trim();
+            const streamEnabled = document.getElementById('streamResponse').checked;
+            
+            if (!message) {
+                alert('Please enter a message!');
+                return;
+            }
+            
+            const filesInput = document.getElementById('files').value.trim();
+            const files = filesInput ? filesInput.split(',').map(f => f.trim()) : [];
+            
+            const requestData = {
+                message: message,
+                session_id: currentSessionId,
+                files: files,
+                stream: streamEnabled
+            };
+            
+            const chatBtn = document.getElementById('chatBtn');
+            chatBtn.disabled = true;
+            chatBtn.textContent = 'Sending...';
+            
+            if (streamEnabled) {
+                await sendChatStreaming(requestData);
+            } else {
+                await sendChatNormal(requestData);
+            }
+            
+            chatBtn.disabled = false;
+            chatBtn.textContent = 'Send Message';
+        }
+        
+        async function sendChatNormal(requestData) {
+            try {
+                const response = await fetch(`${getApiUrl()}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResponse('chatResponse', data);
+                    // Auto-refresh file list after chat
+                    setTimeout(getFiles, 1000);
+                } else {
+                    showResponse('chatResponse', data, true);
+                }
+            } catch (error) {
+                showResponse('chatResponse', `Error: ${error.message}`, true);
+            }
+        }
+        
+        async function sendChatStreaming(requestData) {
+            const streamContainer = document.getElementById('streamContainer');
+            const streamEvents = document.getElementById('streamEvents');
+            
+            streamContainer.style.display = 'block';
+            streamEvents.innerHTML = '';
+            
+            // Close existing EventSource if any
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            try {
+                // Create EventSource for SSE
+                const url = new URL(`${getApiUrl()}/chat`);
+                
+                eventSource = new EventSource(url);
+                
+                // Send the POST request separately (since EventSource only supports GET)
+                fetch(`${getApiUrl()}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                eventSource.onmessage = function(event) {
+                    addStreamEvent('message', event.data);
+                };
+                
+                eventSource.addEventListener('start', function(event) {
+                    addStreamEvent('start', event.data);
+                });
+                
+                eventSource.addEventListener('processing', function(event) {
+                    addStreamEvent('processing', event.data);
+                });
+                
+                eventSource.addEventListener('response', function(event) {
+                    addStreamEvent('response', event.data);
+                });
+                
+                eventSource.addEventListener('complete', function(event) {
+                    addStreamEvent('complete', event.data);
+                    eventSource.close();
+                    // Auto-refresh file list after completion
+                    setTimeout(getFiles, 1000);
+                });
+                
+                eventSource.addEventListener('error', function(event) {
+                    addStreamEvent('error', event.data || 'Stream error occurred');
+                    eventSource.close();
+                });
+                
+                eventSource.onerror = function(event) {
+                    addStreamEvent('error', 'Connection error');
+                    eventSource.close();
+                };
+                
+            } catch (error) {
+                addStreamEvent('error', `Error: ${error.message}`);
+            }
+        }
+        
+        function addStreamEvent(type, data) {
+            const streamEvents = document.getElementById('streamEvents');
+            const eventDiv = document.createElement('div');
+            eventDiv.className = `stream-event ${type}`;
+            eventDiv.textContent = `[${new Date().toLocaleTimeString()}] ${type.toUpperCase()}: ${data}`;
+            streamEvents.appendChild(eventDiv);
+            streamEvents.scrollTop = streamEvents.scrollHeight;
+        }
+        
+        async function getFiles() {
+            if (!currentSessionId) {
+                alert('Please create a session first!');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/sessions/${currentSessionId}/files`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const fileList = document.getElementById('fileList');
+                    fileList.innerHTML = '';
+                    
+                    if (data.files && data.files.length > 0) {
+                        data.files.forEach(file => {
+                            const li = document.createElement('li');
+                            li.textContent = file;
+                            li.onclick = () => {
+                                document.getElementById('selectedFile').value = file;
+                            };
+                            fileList.appendChild(li);
+                        });
+                    } else {
+                        const li = document.createElement('li');
+                        li.textContent = 'No files in session';
+                        fileList.appendChild(li);
+                    }
+                } else {
+                    console.error('Failed to get files:', data);
+                }
+            } catch (error) {
+                console.error('Error getting files:', error);
+            }
+        }
+        
+        async function getFileContent() {
+            if (!currentSessionId) {
+                alert('Please create a session first!');
+                return;
+            }
+            
+            const filePath = document.getElementById('selectedFile').value.trim();
+            if (!filePath) {
+                alert('Please select a file!');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/sessions/${currentSessionId}/file_content?file_path=${encodeURIComponent(filePath)}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResponse('fileContent', data.content);
+                } else {
+                    showResponse('fileContent', data, true);
+                }
+            } catch (error) {
+                showResponse('fileContent', `Error: ${error.message}`, true);
+            }
+        }
+        
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${getApiUrl()}/health`);
+                const data = await response.json();
+                showResponse('statusResponse', data);
+            } catch (error) {
+                showResponse('statusResponse', `Error: ${error.message}`, true);
+            }
+        }
+        
+        async function getModels() {
+            try {
+                const response = await fetch(`${getApiUrl()}/models`);
+                const data = await response.json();
+                showResponse('statusResponse', data);
+            } catch (error) {
+                showResponse('statusResponse', `Error: ${error.message}`, true);
+            }
+        }
+        
+        // Initialize
+        window.onload = function() {
+            // Check if API is running
+            checkHealth();
+        };
+        
+        // Cleanup on page unload
+        window.onbeforeunload = function() {
+            if (eventSource) {
+                eventSource.close();
+            }
+        };
+    </script>
+</body>
+</html> 

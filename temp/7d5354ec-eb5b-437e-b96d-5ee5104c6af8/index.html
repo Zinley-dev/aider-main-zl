@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Alert Button</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-image: url('background.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+        button:first-of-type {
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        button:first-of-type:hover {
+            background-color: #45a049;
+        }
+        button:last-of-type {
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: yellow;
+            color: black;
+            transition: background-color 0.3s ease;
+        }
+        button:last-of-type:hover {
+            background-color: #e6e600;
+        }
+        button:nth-of-type(3) {
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: red;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        button:nth-of-type(3):hover {
+            background-color: #cc0000;
+        }
+    </style>
+</head>
+<body>
+    <img src="image.jpg" alt="Sample Image" style="max-width: 100%; height: auto; margin-bottom: 20px;">
+    <button onclick="showAlert()">Click Me!</button>
+    <button onclick="showAnotherAlert()">Another Button</button>
+    <button onclick="showRedAlert()">Red Button</button>
+    <script>
+        function showAlert() {
+            alert('Button clicked!');
+        }
+        
+        function showAnotherAlert() {
+            alert('Another button clicked!');
+        }
+        
+        function showRedAlert() {
+            alert('Red button clicked!');
+        }
+
+        function setRandomBackgroundColor() {
+            const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+            document.body.style.backgroundColor = randomColor;
+        }
+
+        setRandomBackgroundColor();
+    </script>
+</body>
+</html>

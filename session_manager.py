@@ -1,38 +1,51 @@
 import time
 import threading
 import uuid
+import asyncio
 from typing import Dict, Any, Optional
 
 class SessionManager:
     """
     Quản lý các session Aider cho REST API
     Bao gồm tự động cleanup các session hết hạn
+    Now with async support to reduce blocking
     """
     
     def __init__(self, timeout: int = 3600):  # 1 giờ timeout mặc định
         self.sessions: Dict[str, Dict[str, Any]] = {}
         self.timeout = timeout
-        self.lock = threading.Lock()
+        self.lock = asyncio.Lock()  # Use async lock instead
+        self._thread_lock = threading.Lock()  # Keep thread lock for sync methods
         self.cleanup_thread = threading.Thread(target=self._cleanup_loop, daemon=True)
         self.cleanup_thread.start()
     
-    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+    async def get_session_async(self, session_id: str) -> Optional[Dict[str, Any]]:
         """
-        Lấy session theo ID và cập nhật last_activity
+        Async version of get_session
         """
-        with self.lock:
+        async with self.lock:
             if session_id in self.sessions:
                 session = self.sessions[session_id]
                 session["last_activity"] = time.time()
                 return session
             return None
     
-    def create_session(self, coder, io) -> str:
+    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         """
-        Tạo session mới với coder và io instance
-        Trả về session_id
+        Lấy session theo ID và cập nhật last_activity (sync version)
         """
-        with self.lock:
+        with self._thread_lock:
+            if session_id in self.sessions:
+                session = self.sessions[session_id]
+                session["last_activity"] = time.time()
+                return session
+            return None
+    
+    async def create_session_async(self, coder, io) -> str:
+        """
+        Async version of create_session
+        """
+        async with self.lock:
             session_id = str(uuid.uuid4())
             self.sessions[session_id] = {
                 "coder": coder,
@@ -42,22 +55,61 @@ class SessionManager:
             }
             return session_id
     
-    def delete_session(self, session_id: str) -> bool:
+    def create_session(self, coder, io) -> str:
         """
-        Xóa session theo ID
-        Trả về True nếu thành công, False nếu không tìm thấy
+        Tạo session mới với coder và io instance (sync version)
+        Trả về session_id
         """
-        with self.lock:
+        with self._thread_lock:
+            session_id = str(uuid.uuid4())
+            self.sessions[session_id] = {
+                "coder": coder,
+                "io": io,
+                "last_activity": time.time(),
+                "created_at": time.time()
+            }
+            return session_id
+    
+    async def delete_session_async(self, session_id: str) -> bool:
+        """
+        Async version of delete_session
+        """
+        async with self.lock:
             if session_id in self.sessions:
                 del self.sessions[session_id]
                 return True
             return False
     
+    def delete_session(self, session_id: str) -> bool:
+        """
+        Xóa session theo ID (sync version)
+        Trả về True nếu thành công, False nếu không tìm thấy
+        """
+        with self._thread_lock:
+            if session_id in self.sessions:
+                del self.sessions[session_id]
+                return True
+            return False
+    
+    async def list_sessions_async(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Async version of list_sessions
+        """
+        async with self.lock:
+            sessions_info = {}
+            for session_id, session in self.sessions.items():
+                sessions_info[session_id] = {
+                    "last_activity": session["last_activity"],
+                    "created_at": session["created_at"],
+                    "age_seconds": time.time() - session["created_at"]
+                }
+            return sessions_info
+    
     def list_sessions(self) -> Dict[str, Dict[str, Any]]:
         """
-        Lấy danh sách tất cả session (không bao gồm coder/io objects)
+        Lấy danh sách tất cả session (không bao gồm coder/io objects) (sync version)
         """
-        with self.lock:
+        with self._thread_lock:
             sessions_info = {}
             for session_id, session in self.sessions.items():
                 sessions_info[session_id] = {
@@ -71,7 +123,7 @@ class SessionManager:
         """
         Lấy số lượng session hiện tại
         """
-        with self.lock:
+        with self._thread_lock:
             return len(self.sessions)
     
     def _cleanup_loop(self):
@@ -87,7 +139,7 @@ class SessionManager:
         Xóa các session đã hết hạn
         """
         current_time = time.time()
-        with self.lock:
+        with self._thread_lock:
             expired_sessions = [
                 session_id for session_id, session in self.sessions.items()
                 if current_time - session["last_activity"] > self.timeout
@@ -106,21 +158,47 @@ class SessionManager:
         """
         self._cleanup_expired_sessions()
     
-    def update_session_activity(self, session_id: str) -> bool:
+    async def update_session_activity_async(self, session_id: str) -> bool:
         """
-        Cập nhật thời gian hoạt động cuối của session
+        Async version of update_session_activity
         """
-        with self.lock:
+        async with self.lock:
             if session_id in self.sessions:
                 self.sessions[session_id]["last_activity"] = time.time()
                 return True
             return False
     
+    def update_session_activity(self, session_id: str) -> bool:
+        """
+        Cập nhật thời gian hoạt động cuối của session (sync version)
+        """
+        with self._thread_lock:
+            if session_id in self.sessions:
+                self.sessions[session_id]["last_activity"] = time.time()
+                return True
+            return False
+    
+    async def get_session_info_async(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Async version of get_session_info
+        """
+        async with self.lock:
+            if session_id in self.sessions:
+                session = self.sessions[session_id]
+                return {
+                    "session_id": session_id,
+                    "last_activity": session["last_activity"],
+                    "created_at": session["created_at"],
+                    "age_seconds": time.time() - session["created_at"],
+                    "time_until_expiry": self.timeout - (time.time() - session["last_activity"])
+                }
+            return None
+    
     def get_session_info(self, session_id: str) -> Optional[Dict[str, Any]]:
         """
-        Lấy thông tin về session (không bao gồm coder/io objects)
+        Lấy thông tin về session (không bao gồm coder/io objects) (sync version)
         """
-        with self.lock:
+        with self._thread_lock:
             if session_id in self.sessions:
                 session = self.sessions[session_id]
                 return {

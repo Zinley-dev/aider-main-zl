@@ -41,7 +41,7 @@ class ApiInputOutput(InputOutput):
     def ai_output(self, msg, pretty=None):
         """Capture AI output"""
         self.output_buffer.append(f"AI: {msg}")
-        super().ai_output(msg, pretty)
+        super().ai_output(msg)
     
     def assistant_output(self, msg, pretty=None):
         """Capture assistant output"""
@@ -55,7 +55,7 @@ class ApiInputOutput(InputOutput):
         """
         return None
     
-    def confirm_ask(self, question, default="y", subject=None, group=None, allow_never=False):
+    def confirm_ask(self, question, default="y", subject=None, group=None, allow_never=False, explicit_yes_required=False):
         """
         Override confirm_ask - tự động trả về True cho tất cả xác nhận
         """
@@ -221,7 +221,7 @@ class StreamingApiInputOutput(ApiInputOutput):
     
     def ai_output(self, msg, pretty=None):
         """Override để stream AI output"""
-        super().ai_output(msg, pretty)
+        super().ai_output(msg)
         if self.streaming:
             try:
                 asyncio.create_task(self.emit_event("ai_output", {
