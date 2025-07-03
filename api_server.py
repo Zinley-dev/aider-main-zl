@@ -799,6 +799,7 @@ async def chat_non_stream(request: ChatRequest) -> ChatResponse:
 
         # Chuẩn bị message với instruction rõ ràng hơn
         target_files = ', '.join(request.files) if request.files else 'index.json'
+        print(f"🔍 Target files: {target_files}")
         enhanced_message = f"""
 {request.message}{image_files_info}
 
@@ -822,30 +823,6 @@ JSON FILE SPECIFIC INSTRUCTIONS:
 - For large JSON operations, consider memory-efficient processing
 - When modifying JSON, preserve existing structure unless explicitly requested to change
 - Always validate JSON format after modifications
-
-EXAMPLE JSON STRUCTURE:
-```json
-{
-  "users": [
-    {
-      "id": 1,
-      "name": "John Doe",
-      "email": "john@example.com",
-      "age": 25,
-      "created_date": "2024-01-15T00:00:00Z",
-      "active": true
-    },
-    {
-      "id": 2,
-      "name": "Jane Smith", 
-      "email": "jane@example.com",
-      "age": 30,
-      "created_date": "2024-01-16T00:00:00Z",
-      "active": true
-    }
-  ]
-}
-```
 
 Current working directory: {os.getcwd()}
 Target files to edit: {target_files}
