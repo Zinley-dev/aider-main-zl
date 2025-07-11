@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Optional, AsyncGenerator
 
 from aider.coders import Coder
 from aider.models import Model
+from aider.repo import GitRepo
 from aider.main import register_models, load_dotenv_files
 from api_io import ApiInputOutput, StreamingApiInputOutput
 from session_manager import SessionManager
@@ -46,7 +47,23 @@ def get_or_create_session(session_id: str = None, repo_path: str = None, model: 
         print(f"Model: {model_name}")
         print(f"Edit format: {edit_format}")
         
-        # Tạo coder instance
+        # Khởi tạo repository cho repo_path
+        repo = None
+        if repo_path:
+            try:
+                repo = GitRepo(
+                    io=io,
+                    fnames=[],
+                    git_dname=repo_path,
+                    attribute_author=False,
+                    attribute_committer=False
+                )
+                print(f"Initialized GitRepo for path: {repo_path}")
+            except Exception as e:
+                print(f"Failed to initialize GitRepo: {e}")
+                # Fallback: create a basic repo object
+                repo = None
+        
         coder = Coder.create(
             main_model=main_model,
             io=io,
@@ -56,11 +73,8 @@ def get_or_create_session(session_id: str = None, repo_path: str = None, model: 
             edit_format=edit_format,
             stream=True,
             cache_prompts=True,
+            repo=repo  # Pass the correct repository
         )
-        
-        # Thiết lập root path cho coder nếu có repo_path
-        if repo_path:
-            coder.root = repo_path
         
         # Thêm files vào coder nếu có
         if files:
@@ -358,7 +372,7 @@ def create_temp_repo(files: List[str] = None) -> str:
     """
     Tạo temporary repo directory
     """
-    temp_dir = os.path.join(os.getcwd(), "temp")
+    temp_dir = os.path.join("/Users/hoangnm/Documents/aider-workspace", "temp")
     
     # Nếu không có files, dùng mặc định ["index.html"]
     if not files:
