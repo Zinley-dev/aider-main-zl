@@ -111,38 +111,99 @@ POST /chat
 **Response (Streaming - SSE Format):**
 ```
 event: start
-data: {"message": "Starting chat..."}
+data: {"message": "Starting chat...", "timestamp": "2024-01-15T10:30:00Z"}
 
 event: processing
-data: {"message": "Processing request..."}
+data: {"message": "Processing request...", "session_id": "uuid-string"}
 
 event: tool_output
-data: {"message": "Reading file: example.py"}
+data: {"message": "Reading file: example.py", "tool": "read_file", "status": "success"}
 
 event: ai_output
-data: {"message": "I'll help you add error handling..."}
+data: {"message": "I'll help you add error handling to your function...", "chunk_id": 1}
 
 event: file_write
-data: {"filename": "example.py", "content_length": 1234, "success": true}
+data: {"filename": "example.py", "content_length": 1234, "success": true, "operation": "update"}
+
+event: tool_error
+data: {"message": "File not found: nonexistent.py", "error_code": "FILE_NOT_FOUND", "severity": "error"}
+
+event: tool_warning
+data: {"message": "Large file detected, this may take longer", "warning_code": "LARGE_FILE", "severity": "warning"}
+
+event: heartbeat
+data: {"timestamp": "2024-01-15T10:30:30Z", "connection_id": "conn-123"}
 
 event: complete
-data: {"response": "...", "edited_files": [...], "session_id": "...", "tokens_sent": 150, "tokens_received": 200, "cost": 0.0045}
+data: {
+  "response": "Successfully added error handling to your function. The code now includes try-catch blocks and proper exception handling.",
+  "edited_files": [
+    {
+      "name": "example.py",
+      "content": "def example_function():\n    try:\n        # Your code here\n        pass\n    except Exception as e:\n        print(f'Error: {e}')"
+    }
+  ],
+  "session_id": "uuid-string",
+  "tokens_sent": 150,
+  "tokens_received": 200,
+  "cost": 0.0045,
+  "duration_ms": 2350,
+  "timestamp": "2024-01-15T10:30:45Z"
+}
+
+event: error
+data: {"message": "API rate limit exceeded", "error_code": "RATE_LIMIT", "retry_after": 60}
 ```
 
 **SSE Event Types:**
-- `start`: Bắt đầu xử lý
-- `info`: Thông tin chung
+- `start`: Bắt đầu xử lý request
+  - `message`: Thông báo bắt đầu
+  - `timestamp`: Thời gian bắt đầu
+- `info`: Thông tin chung trong quá trình xử lý
+  - `message`: Nội dung thông tin
 - `processing`: Đang xử lý request
-- `tool_output`: Output từ tools
+  - `message`: Mô tả bước đang xử lý
+  - `session_id`: ID của session
+- `tool_output`: Output thành công từ tools
+  - `message`: Nội dung output
+  - `tool`: Tên tool được sử dụng
+  - `status`: Trạng thái (success/info)
 - `tool_error`: Lỗi từ tools
+  - `message`: Thông báo lỗi
+  - `error_code`: Mã lỗi
+  - `severity`: Mức độ (error)
 - `tool_warning`: Cảnh báo từ tools
-- `ai_output`: Output từ AI model
+  - `message`: Thông báo cảnh báo
+  - `warning_code`: Mã cảnh báo
+  - `severity`: Mức độ (warning)
+- `ai_output`: Output từ AI model (streaming chunks)
+  - `message`: Nội dung text từ AI
+  - `chunk_id`: ID của chunk (tuần tự)
 - `assistant_output`: Output từ assistant
-- `file_write`: Thông báo ghi file
-- `response`: Response từ AI
-- `complete`: Hoàn thành với kết quả cuối
+  - `message`: Nội dung từ assistant
+- `file_write`: Thông báo ghi/cập nhật file
+  - `filename`: Tên file
+  - `content_length`: Độ dài nội dung (bytes)
+  - `success`: Trạng thái thành công
+  - `operation`: Loại thao tác (create/update/delete)
+- `response`: Response trung gian từ AI
+  - `message`: Nội dung response
+- `complete`: Hoàn thành với kết quả cuối cùng
+  - `response`: Response cuối cùng từ AI
+  - `edited_files`: Danh sách file đã chỉnh sửa
+  - `session_id`: ID session
+  - `tokens_sent`: Số token gửi đi
+  - `tokens_received`: Số token nhận về
+  - `cost`: Chi phí API call
+  - `duration_ms`: Thời gian xử lý (milliseconds)
+  - `timestamp`: Thời gian hoàn thành
 - `heartbeat`: Heartbeat để duy trì connection
-- `error`: Lỗi xảy ra
+  - `timestamp`: Thời gian heartbeat
+  - `connection_id`: ID connection
+- `error`: Lỗi xảy ra trong quá trình xử lý
+  - `message`: Thông báo lỗi
+  - `error_code`: Mã lỗi
+  - `retry_after`: Thời gian chờ trước khi retry (seconds)
 
 ### 4. Lấy danh sách Models
 ```http
