@@ -373,7 +373,7 @@ def create_temp_repo(files: List[str] = None) -> str:
     """
     Tạo temporary repo directory
     """
-    temp_dir = os.path.join("/Users/hoangnm/Documents/aider-workspace", "temp")
+    temp_dir = os.path.join("/app", "temp")
     
     # Nếu không có files, dùng mặc định ["index.html"]
     if not files:
