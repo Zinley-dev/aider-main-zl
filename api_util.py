@@ -162,6 +162,7 @@ CRITICAL INSTRUCTIONS:
 4. ONLY return the updated file content, nothing else
 5. The files to edit are: {', '.join(files) if files else 'the files in this chat'}
 6. If there are images available in the session (listed above), use them as reference for building the game/application
+7. Build upon the conversation history - you can see what was discussed before
 
 Edit the files now and return ONLY the updated content.
 """

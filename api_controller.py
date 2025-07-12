@@ -114,9 +114,13 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
         if image_files_info:
             yield f"event: execution_step\ndata: {json.dumps({'step': 'image_analysis', 'message': 'Found reference images in session', 'status': 'complete'})}\n\n"
         
-        # Chuẩn bị message
+        # Check if there's conversation history
+        if hasattr(coder, 'done_messages') and coder.done_messages:
+            yield f"event: execution_step\ndata: {json.dumps({'step': 'context_analysis', 'message': f'Found {len(coder.done_messages)} previous messages in conversation history', 'status': 'complete'})}\n\n"
+        
+        # Chuẩn bị message với Aider's native context
         enhanced_message = create_enhanced_message(request.message, request.files, image_files_info)
-        print(f"🔍 Enhanced message: {enhanced_message}")
+        print(f"🔍 Enhanced message: {enhanced_message[:200]}..." if len(enhanced_message) > 200 else enhanced_message)
         
         # Stream AI thinking process
         yield f"event: ai_thinking\ndata: {json.dumps({'message': 'AI is analyzing the requirements and planning the code structure...'})}\n\n"
@@ -149,13 +153,11 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
             
             # Run the actual coder with streaming - FIXED: Now properly streams AI text chunks
             def run_coder_stream():
-                print(f"🔍 XXX Start Run stream")
                 # Get the stream generator
                 stream_generator = coder.run_stream(user_message=enhanced_message)
                 final_result = ""
                 chunk_count = 0
                 
-                print(f"🔍 XXX End Run stream")
                 try:
                     for chunk in stream_generator:
                         chunk_count += 1
@@ -386,6 +388,13 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
         
         yield f"event: completion_stats\ndata: {json.dumps(completion_stats)}\n\n"
         
+        # Use Aider's native chat history management
+        if response and edited_files and len(edited_files) > 0:
+            # Move current conversation to done_messages for future context
+            commit_message = f"Updated {len(edited_files)} file(s) via API"
+            coder.move_back_cur_messages(commit_message)
+            print(f"🔄 Moved conversation to done_messages for session {session_id}")
+        
         # Emit final result với enhanced data
         final_result = {
             "response": edited_files[0].get("content", "") if edited_files and len(edited_files) > 0 else "ERROR: No files were edited",
@@ -473,6 +482,13 @@ async def chat_non_stream(request):
         warnings = io.get_captured_warnings()
         
         print(f"Edited files: {edited_files}")
+        
+        # Use Aider's native chat history management
+        if response and edited_files and len(edited_files) > 0:
+            # Move current conversation to done_messages for future context
+            commit_message = f"Updated {len(edited_files)} file(s) via API"
+            coder.move_back_cur_messages(commit_message)
+            print(f"🔄 Moved conversation to done_messages for session {session_id}")
         
         # Chỉ trả về nội dung file được cập nhật
         if edited_files and len(edited_files) > 0:
