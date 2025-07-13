@@ -1,527 +1,962 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aider REST API Streaming Demo</title>
+    <title>Aider API Streaming Demo - Enhanced Code Generation</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
+            margin: 0;
             padding: 20px;
-            background-color: #f5f5f5;
-        }
-        
-        .container {
-            background: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        h1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
             text-align: center;
-            margin-bottom: 30px;
         }
-        
-        .form-group {
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .left-panel,
+        .right-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            height: 80vh;
+            overflow-y: auto;
+        }
+
+        .session-info {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
             margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
         }
-        
+
+        .session-info h3 {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+        }
+
+        .session-info p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
         label {
             display: block;
             margin-bottom: 5px;
-            font-weight: bold;
+            font-weight: 500;
             color: #555;
         }
-        
-        input, textarea, select {
+
+        input,
+        select,
+        textarea {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid #ddd;
-            border-radius: 5px;
+            border-radius: 6px;
             font-size: 14px;
             box-sizing: border-box;
         }
-        
+
         textarea {
-            height: 100px;
             resize: vertical;
+            min-height: 100px;
         }
-        
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .checkbox-group input[type="checkbox"] {
-            width: auto;
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
+
         button {
-            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             border: none;
-            border-radius: 5px;
+            padding: 12px 24px;
+            border-radius: 6px;
             font-size: 16px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            margin-right: 10px;
+            transition: all 0.3s ease;
         }
-        
-        .btn-primary {
-            background-color: #007bff;
-            color: white;
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
-        
-        .btn-primary:hover {
-            background-color: #0056b3;
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
-        
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background-color: #545b62;
-        }
-        
-        .btn-danger {
-            background-color: #dc3545;
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background-color: #c82333;
-        }
-        
-        .output-container {
-            margin-top: 30px;
-        }
-        
-        .output-box {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            padding: 15px;
-            height: 400px;
+
+        .messages {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            height: 100%;
             overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.4;
         }
-        
-        .event-line {
-            margin-bottom: 5px;
-            padding: 2px 5px;
-            border-radius: 3px;
-        }
-        
-        .event-start { background-color: #d4edda; color: #155724; }
-        .event-info { background-color: #d1ecf1; color: #0c5460; }
-        .event-processing { background-color: #fff3cd; color: #856404; }
-        .event-tool_output { background-color: #e2e3e5; color: #383d41; }
-        .event-tool_error { background-color: #f8d7da; color: #721c24; }
-        .event-tool_warning { background-color: #ffeaa7; color: #856404; }
-        .event-ai_output { background-color: #cce5ff; color: #004085; }
-        .event-assistant_output { background-color: #e7f3ff; color: #004085; }
-        .event-file_write { background-color: #d4edda; color: #155724; }
-        .event-response { background-color: #f0f8ff; color: #0056b3; }
-        .event-complete { background-color: #d4edda; color: #155724; font-weight: bold; }
-        .event-heartbeat { background-color: #f8f9fa; color: #6c757d; }
-        .event-error { background-color: #f8d7da; color: #721c24; font-weight: bold; }
-        
-        .status {
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-        
-        .status-idle { background-color: #e2e3e5; color: #383d41; }
-        .status-connecting { background-color: #fff3cd; color: #856404; }
-        .status-streaming { background-color: #d1ecf1; color: #0c5460; }
-        .status-complete { background-color: #d4edda; color: #155724; }
-        .status-error { background-color: #f8d7da; color: #721c24; }
-        
-        .result-summary {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            padding: 15px;
-            margin-top: 20px;
-        }
-        
-        .result-summary h3 {
+
+        .messages h3 {
             margin-top: 0;
-            color: #495057;
+            color: #333;
         }
-        
-        .result-item {
-            margin-bottom: 10px;
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
-        .result-item strong {
-            color: #495057;
+
+        .message.user {
+            border-left-color: #28a745;
+            background: #f8fff9;
+        }
+
+        .message.assistant {
+            border-left-color: #007bff;
+            background: #f8f9ff;
+        }
+
+        .message.error {
+            border-left-color: #dc3545;
+            background: #fff8f8;
+        }
+
+        .message.system {
+            border-left-color: #6c757d;
+            background: #f8f8f8;
+        }
+
+        .message.ai-thinking {
+            border-left-color: #ffc107;
+            background: #fffbf0;
+        }
+
+        .message.code-generation {
+            border-left-color: #17a2b8;
+            background: #f0f8ff;
+        }
+
+        .message.execution-step {
+            border-left-color: #6f42c1;
+            background: #f8f6ff;
+        }
+
+        .message.file-analysis {
+            border-left-color: #fd7e14;
+            background: #fff7f0;
+        }
+
+        .message.streaming {
+            border-left-color: #00d4aa;
+            background: #f0fffc;
+            animation: pulse 2s infinite;
+        }
+
+        .message.streaming .code-block {
+            background: #263238;
+            color: #a7ffeb;
+            border-left: 4px solid #00d4aa;
+        }
+
+        .message.chunk-debug {
+            border-left-color: #ff9800;
+            background: #fff8e1;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .message-type {
+            font-weight: 600;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .message-timestamp {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .message-content {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-running {
+            background: #ffc107;
+            animation: pulse 2s infinite;
+        }
+
+        .status-complete {
+            background: #28a745;
+        }
+
+        .status-error {
+            background: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .file-preview {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .scrollable {
+            scrollbar-width: thin;
+            scrollbar-color: #667eea #f1f1f1;
+        }
+
+        .scrollable::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scrollable::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .scrollable::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        .scrollable::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
-        <h1>🚀 Aider REST API Streaming Demo</h1>
-        
-        <div class="form-group">
-            <label for="apiUrl">API Base URL:</label>
-            <input type="text" id="apiUrl" value="http://localhost:8000">
+        <div class="header">
+            <h1>🚀 Aider API Streaming Demo</h1>
+            <p>Enhanced Code Generation with Real-time Progress Tracking</p>
         </div>
-        
-        <div class="form-group">
-            <label for="repoPath">Repository Path:</label>
-            <input type="text" id="repoPath" value="/Users/hoangnm/Desktop/test" placeholder="Absolute path to your project">
-        </div>
-        
-        <div class="form-group">
-            <label for="files">Files (comma-separated):</label>
-            <input type="text" id="files" value="index.html" placeholder="file1.js, file2.css, file3.html">
-        </div>
-        
-        <div class="form-group">
-            <label for="model">Model:</label>
-            <select id="model">
-                <option value="deepseek/deepseek-coder">DeepSeek Coder</option>
-                <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                <option value="gpt-4">GPT-4</option>
-                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label for="message">Message:</label>
-            <textarea id="message" placeholder="Enter your message to Aider...">Create a beautiful resume webpage with modern CSS styling, responsive design, and professional layout. Include sections for personal info, experience, skills, and education.</textarea>
-        </div>
-        
-        <div class="form-group">
-            <div class="checkbox-group">
-                <input type="checkbox" id="streaming" checked>
-                <label for="streaming">Enable Streaming (SSE)</label>
+
+        <div class="main-content">
+            <div class="left-panel scrollable">
+                <div class="session-info" id="sessionInfo">
+                    <h3>📋 Session Information</h3>
+                    <p><strong>API Server:</strong> <span id="apiServer">http://localhost:8000</span></p>
+                    <p><strong>Session ID:</strong> <span id="sessionId">Not created</span></p>
+                    <p><strong>Repository:</strong> <span id="repoPath">Not set</span></p>
+                    <p><strong>Model:</strong> <span id="currentModel">Not selected</span></p>
+                    <p><strong>Files:</strong> <span id="currentFiles">None</span></p>
+                </div>
+
+                <div class="form-group">
+                    <label for="model">🤖 Model:</label>
+                    <select id="model">
+                        <option value="snowx/gpt-4.1" selected>SnowX GPT-4.1 (Default)</option>
+                        <option value="snowx/gpt-4o">SnowX GPT-4O</option>
+                        <option value="gpt-4o">GPT-4O</option>
+                        <option value="gpt-4o-mini">GPT-4O Mini</option>
+                        <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                        <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="files">📁 Files (one per line):</label>
+                    <textarea id="files" placeholder="index.html&#10;style.css&#10;script.js">index.html</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="message">💬 Message:</label>
+                    <textarea id="message"
+                        placeholder="Create a beautiful landing page with modern design...">Create a simple HTML page with hello world</textarea>
+                </div>
+
+                <div class="form-group">
+                    <button id="createSession">🎯 Create New Session</button>
+                    <button id="getFiles" disabled>📁 Get Session Files</button>
+                    <button id="sendMessage" disabled>🚀 Send Message (Streaming)</button>
+                    <button id="stopStream" disabled>⏹️ Stop Stream</button>
+                </div>
+
+                <div class="stats-grid" id="statsGrid" style="display: none;">
+                    <div class="stat-card">
+                        <div class="stat-value" id="eventsCount">0</div>
+                        <div class="stat-label">Events Streamed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="filesModified">0</div>
+                        <div class="stat-label">Files Modified</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalChars">0</div>
+                        <div class="stat-label">Total Characters</div>
+                    </div>
+                </div>
             </div>
-        </div>
-        
-        <div class="button-group">
-            <button class="btn-primary" onclick="sendChat()">Send Chat</button>
-            <button class="btn-secondary" onclick="clearOutput()">Clear Output</button>
-            <button class="btn-danger" onclick="stopStreaming()">Stop Streaming</button>
-        </div>
-        
-        <div id="status" class="status status-idle">Status: Ready</div>
-        
-        <div class="output-container">
-            <h3>Output:</h3>
-            <div id="output" class="output-box"></div>
-        </div>
-        
-        <div id="resultSummary" class="result-summary" style="display: none;">
-            <h3>Result Summary</h3>
-            <div id="resultContent"></div>
+
+            <div class="right-panel">
+                <div class="messages scrollable" id="messages">
+                    <h3>💬 Real-time Code Generation Progress</h3>
+                    <div class="message system">
+                        <div class="message-header">
+                            <span class="message-type">System</span>
+                            <span class="message-timestamp">Ready</span>
+                        </div>
+                        <div class="message-content">
+                            Welcome to the enhanced Aider API streaming demo!
+                            Create a session first, then send messages to see real-time code generation.
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        let eventSource = null;
+        // Configuration
+        const API_BASE_URL = 'https://aider.snowx.ai';
+
         let currentSessionId = null;
-        
-        function updateStatus(message, className) {
-            const statusEl = document.getElementById('status');
-            statusEl.textContent = `Status: ${message}`;
-            statusEl.className = `status ${className}`;
-        }
-        
-        function addOutputLine(message, eventType = 'info') {
-            const outputEl = document.getElementById('output');
-            const line = document.createElement('div');
-            line.className = `event-line event-${eventType}`;
-            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            outputEl.appendChild(line);
-            outputEl.scrollTop = outputEl.scrollHeight;
-        }
-        
-        function clearOutput() {
-            document.getElementById('output').innerHTML = '';
-            document.getElementById('resultSummary').style.display = 'none';
-        }
-        
-        function showResultSummary(result) {
-            const summaryEl = document.getElementById('resultSummary');
-            const contentEl = document.getElementById('resultContent');
-            
-            contentEl.innerHTML = `
-                <div class="result-item"><strong>Session ID:</strong> ${result.session_id || 'N/A'}</div>
-                <div class="result-item"><strong>Tokens Sent:</strong> ${result.tokens_sent || 0}</div>
-                <div class="result-item"><strong>Tokens Received:</strong> ${result.tokens_received || 0}</div>
-                <div class="result-item"><strong>Cost:</strong> $${(result.cost || 0).toFixed(4)}</div>
-                <div class="result-item"><strong>Edited Files:</strong> ${(result.edited_files || []).length}</div>
-                ${(result.edited_files || []).map(file => 
-                    `<div class="result-item">📄 <strong>${file.name}</strong> (${file.content.length} chars)</div>`
-                ).join('')}
-            `;
-            
-            summaryEl.style.display = 'block';
-        }
-        
-        async function createSession() {
-            const apiUrl = document.getElementById('apiUrl').value;
-            const repoPath = document.getElementById('repoPath').value;
-            const files = document.getElementById('files').value.split(',').map(f => f.trim()).filter(f => f);
+        let currentController = null;
+        let eventCounts = {
+            total: 0,
+            ai_output: 0,
+            ai_chunk_debug: 0,
+            ai_response_chunk: 0,
+            code_chunk: 0,
+            file_write: 0,
+            execution_step: 0
+        };
+        let streamStats = {
+            events: 0,
+            files: 0,
+            characters: 0
+        };
+
+        // AI response aggregation
+        let aiResponseBuffer = '';
+        let aiResponseElement = null;
+
+        // DOM elements
+        const sessionInfo = document.getElementById('sessionInfo');
+        const sessionIdSpan = document.getElementById('sessionId');
+        const repoPathSpan = document.getElementById('repoPath');
+        const currentModelSpan = document.getElementById('currentModel');
+        const currentFilesSpan = document.getElementById('currentFiles');
+        const messagesDiv = document.getElementById('messages');
+        const createSessionBtn = document.getElementById('createSession');
+        const getFilesBtn = document.getElementById('getFiles');
+        const sendMessageBtn = document.getElementById('sendMessage');
+        const stopStreamBtn = document.getElementById('stopStream');
+        const statsGrid = document.getElementById('statsGrid');
+        const eventsCountSpan = document.getElementById('eventsCount');
+        const filesModifiedSpan = document.getElementById('filesModified');
+        const totalCharsSpan = document.getElementById('totalChars');
+
+        // Create session
+        createSessionBtn.addEventListener('click', async () => {
             const model = document.getElementById('model').value;
-            
+            const files = document.getElementById('files').value.split('\n').filter(f => f.trim());
+
             try {
-                const response = await fetch(`${apiUrl}/sessions`, {
+                createSessionBtn.disabled = true;
+                createSessionBtn.textContent = '🔄 Creating Session...';
+
+                const response = await fetch(`${API_BASE_URL}/sessions`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        repo_path: repoPath,
-                        files: files,
-                        model: model
+                        model: model,
+                        files: files
                     })
                 });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentSessionId = data.session_id;
+                    updateSessionInfo(data);
+                    sendMessageBtn.disabled = false;
+                    getFilesBtn.disabled = false;
+                    addMessage('system', '✅ Session created successfully!', data);
+                } else {
+                    addMessage('error', `❌ Failed to create session: ${data.message}`, data);
                 }
-                
-                const result = await response.json();
-                currentSessionId = result.session_id;
-                addOutputLine(`✅ Session created: ${currentSessionId}`, 'start');
-                return currentSessionId;
-                
             } catch (error) {
-                addOutputLine(`❌ Failed to create session: ${error.message}`, 'error');
-                throw error;
+                addMessage('error', `❌ Error creating session: ${error.message}`, {});
+            } finally {
+                createSessionBtn.disabled = false;
+                createSessionBtn.textContent = '🎯 Create New Session';
             }
-        }
-        
-        function sendStreamingChat(sessionId) {
-            const apiUrl = document.getElementById('apiUrl').value;
-            const message = document.getElementById('message').value;
-            
-            const chatData = {
-                message: message,
-                session_id: sessionId,
-                stream: true
-            };
-            
-            updateStatus('Connecting to stream...', 'status-connecting');
-            addOutputLine('🔄 Starting streaming chat...', 'processing');
-            
-            // Close existing connection
-            if (eventSource) {
-                eventSource.close();
+        });
+
+        // Get session files
+        getFilesBtn.addEventListener('click', async () => {
+            if (!currentSessionId) {
+                alert('Please create a session first');
+                return;
             }
-            
-            // Create new EventSource for streaming
-            eventSource = new EventSource(`${apiUrl}/chat`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(chatData)
-            });
-            
-            // Sử dụng fetch với streaming thay vì EventSource vì EventSource không hỗ trợ POST
-            fetch(`${apiUrl}/chat`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'text/event-stream',
-                    'Cache-Control': 'no-cache'
-                },
-                body: JSON.stringify(chatData)
-            }).then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                updateStatus('Streaming...', 'status-streaming');
-                
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                
-                function readStream() {
-                    reader.read().then(({ done, value }) => {
-                        if (done) {
-                            updateStatus('Stream completed', 'status-complete');
-                            addOutputLine('🏁 Stream ended', 'complete');
-                            return;
-                        }
-                        
-                        const chunk = decoder.decode(value, { stream: true });
-                        const lines = chunk.split('\n');
-                        
-                        let currentEvent = null;
-                        
-                        for (const line of lines) {
-                            if (line.startsWith('event: ')) {
-                                currentEvent = line.substring(7);
-                            } else if (line.startsWith('data: ')) {
-                                const dataStr = line.substring(6);
-                                try {
-                                    const data = JSON.parse(dataStr);
-                                    handleStreamEvent(currentEvent, data);
-                                } catch (e) {
-                                    console.warn('Invalid JSON:', dataStr);
-                                }
-                            }
-                        }
-                        
-                        readStream();
-                    }).catch(error => {
-                        updateStatus('Stream error', 'status-error');
-                        addOutputLine(`💥 Stream error: ${error.message}`, 'error');
-                    });
-                }
-                
-                readStream();
-                
-            }).catch(error => {
-                updateStatus('Connection failed', 'status-error');
-                addOutputLine(`❌ Connection failed: ${error.message}`, 'error');
-            });
-        }
-        
-        function handleStreamEvent(eventType, data) {
-            switch (eventType) {
-                case 'start':
-                    addOutputLine(`🟢 ${data.message}`, 'start');
-                    break;
-                case 'info':
-                    addOutputLine(`ℹ️ ${data.message}`, 'info');
-                    break;
-                case 'processing':
-                    addOutputLine(`⚙️ ${data.message}`, 'processing');
-                    break;
-                case 'tool_output':
-                    addOutputLine(`🔧 Tool: ${data.message}`, 'tool_output');
-                    break;
-                case 'tool_error':
-                    addOutputLine(`❌ Tool Error: ${data.message}`, 'tool_error');
-                    break;
-                case 'tool_warning':
-                    addOutputLine(`⚠️ Tool Warning: ${data.message}`, 'tool_warning');
-                    break;
-                case 'ai_output':
-                    addOutputLine(`🤖 AI: ${data.message}`, 'ai_output');
-                    break;
-                case 'assistant_output':
-                    addOutputLine(`👨‍💻 Assistant: ${data.message}`, 'assistant_output');
-                    break;
-                case 'file_write':
-                    const status = data.success ? '✅' : '❌';
-                    addOutputLine(`${status} File Write: ${data.filename} (${data.content_length} chars)`, 'file_write');
-                    break;
-                case 'response':
-                    const preview = data.message.length > 100 ? data.message.substring(0, 100) + '...' : data.message;
-                    addOutputLine(`💬 Response: ${preview}`, 'response');
-                    break;
-                case 'complete':
-                    addOutputLine('🎉 Complete!', 'complete');
-                    updateStatus('Completed', 'status-complete');
-                    showResultSummary(data);
-                    break;
-                case 'heartbeat':
-                    addOutputLine('💓 Heartbeat', 'heartbeat');
-                    break;
-                case 'error':
-                    addOutputLine(`💥 Error: ${data.message}`, 'error');
-                    updateStatus('Error occurred', 'status-error');
-                    break;
-                default:
-                    addOutputLine(`📝 ${eventType}: ${JSON.stringify(data)}`, 'info');
-            }
-        }
-        
-        async function sendNonStreamingChat(sessionId) {
-            const apiUrl = document.getElementById('apiUrl').value;
-            const message = document.getElementById('message').value;
-            
-            const chatData = {
-                message: message,
-                session_id: sessionId,
-                stream: false
-            };
-            
-            updateStatus('Sending request...', 'status-connecting');
-            addOutputLine('⏳ Sending non-streaming request...', 'processing');
-            
+
             try {
-                const response = await fetch(`${apiUrl}/chat`, {
+                getFilesBtn.disabled = true;
+                getFilesBtn.textContent = '🔄 Getting Files...';
+
+                const response = await fetch(`${API_BASE_URL}/sessions/${currentSessionId}/files`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    addMessage('system', `📁 Session Files Retrieved (${data.files.length} files)`, data);
+                    
+                    // Display files in a formatted way
+                    const filesList = data.files.map(file => `• ${file}`).join('\n');
+                    addMessage('system', 'Files in session:', data, filesList);
+                    
+                    // Update current files display
+                    currentFilesSpan.textContent = data.files.join(', ');
+                } else {
+                    addMessage('error', `❌ Failed to get files: ${data.message}`, data);
+                }
+            } catch (error) {
+                addMessage('error', `❌ Error getting files: ${error.message}`, {});
+            } finally {
+                getFilesBtn.disabled = false;
+                getFilesBtn.textContent = '📁 Get Session Files';
+            }
+        });
+
+        // Send message with streaming
+        sendMessageBtn.addEventListener('click', async () => {
+            const message = document.getElementById('message').value.trim();
+            const files = document.getElementById('files').value.split('\n').filter(f => f.trim());
+
+            if (!message) {
+                alert('Please enter a message');
+                return;
+            }
+
+            if (!currentSessionId) {
+                alert('Please create a session first');
+                return;
+            }
+
+            try {
+                // Reset stats
+                eventCounts = { total: 0, ai_output: 0, code_chunk: 0, file_write: 0, execution_step: 0 };
+                streamStats = { events: 0, files: 0, characters: 0 };
+                updateStats();
+                statsGrid.style.display = 'grid';
+
+                // Disable send button, enable stop button
+                sendMessageBtn.disabled = true;
+                stopStreamBtn.disabled = false;
+                sendMessageBtn.textContent = '🔄 Generating Code...';
+
+                // Add user message
+                addMessage('user', message, { files: files });
+
+                // Create AbortController for stopping stream
+                currentController = new AbortController();
+
+                // Start streaming
+                const response = await fetch(`${API_BASE_URL}/chat`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(chatData)
+                    body: JSON.stringify({
+                        session_id: currentSessionId,
+                        message: message,
+                        files: files,
+                        stream: true
+                    }),
+                    signal: currentController.signal
                 });
-                
+
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
-                const result = await response.json();
-                
-                updateStatus('Completed', 'status-complete');
-                addOutputLine('✅ Response received', 'complete');
-                addOutputLine(`💬 Response: ${result.response.substring(0, 200)}...`, 'response');
-                
-                showResultSummary(result);
-                
+
+                // Process streaming response
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+
+                    // Process complete SSE events
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+                    let eventType = '';
+                    let eventData = '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('event: ')) {
+                            eventType = line.substring(7);
+                        } else if (line.startsWith('data: ')) {
+                            eventData = line.substring(6);
+                        } else if (line === '' && eventType && eventData) {
+                            // Process complete event
+                            try {
+                                const data = JSON.parse(eventData);
+                                console.log(`🌊 Received event: ${eventType}`, data);
+                                handleStreamEvent(eventType, data);
+
+                                // Update stats
+                                eventCounts.total++;
+                                eventCounts[eventType] = (eventCounts[eventType] || 0) + 1;
+                                streamStats.events++;
+                                updateStats();
+
+                            } catch (e) {
+                                console.error('Error parsing SSE data:', e, eventData);
+                                console.log('Raw eventData:', eventData);
+                            }
+
+                            // Reset for next event
+                            eventType = '';
+                            eventData = '';
+                        }
+                    }
+                }
+
             } catch (error) {
-                updateStatus('Request failed', 'status-error');
-                addOutputLine(`❌ Request failed: ${error.message}`, 'error');
-            }
-        }
-        
-        async function sendChat() {
-            const streaming = document.getElementById('streaming').checked;
-            
-            try {
-                // Tạo session nếu chưa có
-                if (!currentSessionId) {
-                    await createSession();
-                }
-                
-                if (streaming) {
-                    sendStreamingChat(currentSessionId);
+                if (error.name === 'AbortError') {
+                    addMessage('system', '⏹️ Stream stopped by user', {});
                 } else {
-                    await sendNonStreamingChat(currentSessionId);
+                    addMessage('error', `❌ Error: ${error.message}`, {});
                 }
-                
+            } finally {
+                // Reset buttons
+                sendMessageBtn.disabled = false;
+                stopStreamBtn.disabled = true;
+                sendMessageBtn.textContent = '🚀 Send Message (Streaming)';
+                currentController = null;
+            }
+        });
+
+        // Stop streaming
+        stopStreamBtn.addEventListener('click', () => {
+            if (currentController) {
+                currentController.abort();
+            }
+        });
+
+        // Handle different stream events
+        function handleStreamEvent(eventType, data) {
+            const timestamp = new Date().toLocaleTimeString();
+            console.log(`🎯 Handling event: ${eventType}`, data);
+
+            switch (eventType) {
+                case 'start':
+                    addMessage('system', '🚀 Starting code generation...', data);
+                    break;
+
+                case 'ai_thinking':
+                    addMessage('ai-thinking', `🤔 ${data.message}`, data);
+                    break;
+
+                case 'execution_step':
+                    const statusIcon = data.status === 'running' ? '🔄' :
+                        data.status === 'complete' ? '✅' : '❌';
+                    addMessage('execution-step', `${statusIcon} ${data.message}`, data);
+                    break;
+
+                case 'code_gen_start':
+                    addMessage('code-generation', `🎯 Starting code generation for ${data.filename}`, data);
+                    break;
+
+                case 'code_chunk':
+                    addMessage('code-generation', `📝 Code chunk for ${data.filename}`, data, data.chunk);
+                    break;
+
+                case 'code_gen_complete':
+                    addMessage('code-generation', `✅ Completed ${data.filename} (${data.total_lines} lines)`, data);
+                    break;
+
+                case 'file_analysis':
+                    addMessage('file-analysis', `📊 ${data.filename}: ${data.lines} lines, ${data.characters} characters`, data);
+                    break;
+
+                case 'code_preview':
+                    addMessage('file-analysis', `👀 Preview of ${data.filename}`, data, data.preview);
+                    break;
+
+                case 'file_write':
+                    const writeIcon = data.success ? '✅' : '❌';
+                    addMessage('system', `${writeIcon} ${data.success ? 'Wrote' : 'Failed to write'} ${data.filename} (${data.content_length} chars)`, data);
+                    if (data.success) {
+                        streamStats.files++;
+                        streamStats.characters += data.content_length;
+                    }
+                    break;
+
+                case 'file_mod_start':
+                    addMessage('system', `🔧 Starting ${data.action} for ${data.filename}`, data);
+                    break;
+
+                case 'file_mod_step':
+                    addMessage('system', `⚙️ ${data.filename}: ${data.step}`, data);
+                    break;
+
+                case 'file_mod_complete':
+                    const modIcon = data.success ? '✅' : '❌';
+                    addMessage('system', `${modIcon} ${data.filename}: ${data.details}`, data);
+                    break;
+
+                case 'ai_response_start':
+                    addMessage('ai-thinking', '🤖 AI is starting to generate response...', data);
+                    // Create placeholder for streaming AI response
+                    aiResponseBuffer = '';
+                    aiResponseElement = addMessage('streaming', '🤖 AI Response (Waiting for chunks...)', data, '', true);
+                    break;
+
+                case 'ai_response_chunk':
+                    // Accumulate chunk
+                    aiResponseBuffer += data.chunk;
+
+                    // Update the streaming message
+                    if (aiResponseElement) {
+                        const contentDiv = aiResponseElement.querySelector('.message-content');
+                        const codeBlock = aiResponseElement.querySelector('.code-block');
+                        if (codeBlock) {
+                            codeBlock.textContent = aiResponseBuffer;
+                        } else {
+                            contentDiv.innerHTML = `
+                                🤖 AI Response (Streaming... ${aiResponseBuffer.length} chars)
+                                <div class="code-block">${escapeHtml(aiResponseBuffer)}</div>
+                            `;
+                        }
+                    }
+
+                    // Also add individual chunk messages for detailed tracking
+                    addMessage('system', `📝 AI Chunk: ${data.chunk.substring(0, 50)}${data.chunk.length > 50 ? '...' : ''}`, data);
+                    break;
+
+                case 'ai_chunk_debug':
+                    // Show raw chunks for debugging - with special styling
+                    addMessage('chunk-debug', `🔍 Raw Chunk #${data.chunk_count}: "${data.chunk}"`, data);
+
+                    // Also update cumulative AI response if we're in streaming mode
+                    if (aiResponseElement) {
+                        const chunkPreview = data.chunk.length > 20 ? data.chunk.substring(0, 20) + '...' : data.chunk;
+                        const contentDiv = aiResponseElement.querySelector('.message-content');
+                        contentDiv.innerHTML = `
+                            🤖 AI Response (Streaming... chunk #${data.chunk_count})
+                            <div class="file-preview">Latest chunk: ${escapeHtml(chunkPreview)}</div>
+                        `;
+                    }
+                    break;
+
+                case 'ai_response_complete':
+                    addMessage('ai-thinking', `✅ AI response generation completed (${aiResponseBuffer.length} chars)`, data);
+
+                    // Update final message
+                    if (aiResponseElement) {
+                        // Remove streaming class to stop animation
+                        aiResponseElement.className = aiResponseElement.className.replace('streaming', 'assistant');
+
+                        const contentDiv = aiResponseElement.querySelector('.message-content');
+                        contentDiv.innerHTML = `
+                            🤖 AI Response (Complete - ${aiResponseBuffer.length} chars)
+                            <div class="code-block">${escapeHtml(aiResponseBuffer)}</div>
+                        `;
+                    }
+
+                    // Reset buffer
+                    aiResponseBuffer = '';
+                    aiResponseElement = null;
+                    break;
+
+                case 'ai_output':
+                    if (data.is_chunk) {
+                        addMessage('assistant', `🤖 AI Output (chunk ${data.chunk_index + 1}/${data.total_chunks})`, data, data.message);
+                    } else {
+                        addMessage('assistant', '🤖 AI Output', data, data.message);
+                    }
+                    break;
+
+                case 'tool_output':
+                    addMessage('system', `🔧 Tool: ${data.message}`, data);
+                    break;
+
+                case 'tool_error':
+                    addMessage('error', `❌ Tool Error: ${data.message}`, data);
+                    break;
+
+                case 'tool_warning':
+                    addMessage('system', `⚠️ Tool Warning: ${data.message}`, data);
+                    break;
+
+                case 'file_summary':
+                    addMessage('system', `📄 Generated ${data.filename} with ${data.content_length} characters`, data);
+                    break;
+
+                case 'completion_stats':
+                    addMessage('system', `📊 Completion Stats: ${data.files_modified} files, ${data.events_streamed} events, ${data.total_characters} characters`, data);
+                    streamStats.files = data.files_modified;
+                    streamStats.characters = data.total_characters;
+                    break;
+
+                case 'response':
+                    if (data.type === 'file_content') {
+                        addMessage('assistant', `✅ Generated ${data.filename}`, data, data.message);
+                    } else {
+                        addMessage('assistant', '🤖 Response', data, data.message);
+                    }
+                    break;
+
+                case 'complete':
+                    addMessage('system', '🎉 Code generation completed!', data);
+                    break;
+
+                case 'error':
+                    addMessage('error', `❌ Error: ${data.message}`, data);
+                    break;
+
+                case 'heartbeat':
+                    // Don't show heartbeat messages, just update stats
+                    break;
+
+                default:
+                    addMessage('system', `📡 ${eventType}: ${data.message || JSON.stringify(data)}`, data);
+            }
+        }
+
+        // Add message to UI
+        function addMessage(type, content, data, codeContent = null, returnElement = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+
+            const timestamp = new Date().toLocaleTimeString();
+
+            let statusIndicator = '';
+            if (data.status) {
+                statusIndicator = `<span class="status-indicator status-${data.status}"></span>`;
+            }
+
+            messageDiv.innerHTML = `
+                 <div class="message-header">
+                     ${statusIndicator}
+                     <span class="message-type">${type.replace('-', ' ')}</span>
+                     <span class="message-timestamp">${timestamp}</span>
+                 </div>
+                 <div class="message-content">
+                     ${content}
+                     ${codeContent ? `<div class="code-block">${escapeHtml(codeContent)}</div>` : ''}
+                 </div>
+             `;
+
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            // Return element reference if requested
+            if (returnElement) {
+                return messageDiv;
+            }
+        }
+
+        // Update session info
+        function updateSessionInfo(data) {
+            sessionIdSpan.textContent = data.session_id;
+            repoPathSpan.textContent = data.repo_path;
+            currentModelSpan.textContent = data.model;
+            currentFilesSpan.textContent = data.files ? data.files.join(', ') : 'None';
+        }
+
+        // Update statistics
+        function updateStats() {
+            eventsCountSpan.textContent = streamStats.events;
+            filesModifiedSpan.textContent = streamStats.files;
+            totalCharsSpan.textContent = streamStats.characters.toLocaleString();
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function (m) { return map[m]; });
+        }
+
+        // Test API connection
+        async function testApiConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                if (response.ok) {
+                    document.getElementById('apiServer').style.color = '#28a745';
+                    addMessage('system', `✅ Connected to API server at ${API_BASE_URL}`, {});
+                } else {
+                    document.getElementById('apiServer').style.color = '#dc3545';
+                    addMessage('error', `❌ API server responded with status ${response.status}`, {});
+                }
             } catch (error) {
-                updateStatus('Failed', 'status-error');
-                addOutputLine(`❌ Failed: ${error.message}`, 'error');
+                document.getElementById('apiServer').style.color = '#dc3545';
+                addMessage('error', `❌ Cannot connect to API server at ${API_BASE_URL}: ${error.message}`, {});
             }
         }
-        
-        function stopStreaming() {
-            if (eventSource) {
-                eventSource.close();
-                eventSource = null;
-            }
-            updateStatus('Stopped', 'status-idle');
-            addOutputLine('⏹️ Streaming stopped by user', 'info');
-        }
-        
-        // Initialize
-        updateStatus('Ready', 'status-idle');
-        addOutputLine('🚀 Aider REST API Streaming Demo initialized', 'start');
+
+        // Set default model on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const modelSelect = document.getElementById('model');
+            currentModelSpan.textContent = modelSelect.value;
+
+            // Set API server in session info
+            document.getElementById('apiServer').textContent = API_BASE_URL;
+
+            // Test API connection
+            testApiConnection();
+
+            modelSelect.addEventListener('change', function () {
+                currentModelSpan.textContent = this.value;
+            });
+        });
     </script>
 </body>
-</html> 
+
+</html>
