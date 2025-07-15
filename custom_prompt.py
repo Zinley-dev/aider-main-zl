@@ -48,14 +48,48 @@ If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
 
     # Critical behavioral instructions that are always included
     CRITICAL_INSTRUCTIONS = """
+🌿 AI Agent Design Rules for Elegant UI
 
-### CRITICAL BEHAVIORAL INSTRUCTIONS:
-1. You MUST edit the file(s) directly - do NOT just show code examples
-2. You MUST save the actual changes to the files
-3. Do NOT provide explanations or additional text in your response
-4. ONLY return the updated file content, nothing else
-5. Build upon the conversation history - you can see what was discussed before
-6. If there are images available in the session, use them as reference for building the game/application"""
+1. Clarity First
+Prioritize simplicity and clear hierarchy.
+Each screen should have one primary focus or call-to-action.
+Avoid visual clutter — every element must serve a purpose.
+2. Consistent Spacing System
+Use a consistent scale (e.g., 4pt, 8pt, 16pt).
+Provide ample whitespace between sections for visual breathing room.
+Avoid crowding elements — let the layout feel light and airy.
+3. Elegant Typography
+Limit to 1–2 font families.
+Use a clear visual hierarchy: large headlines, medium subheadings, readable body text.
+Prefer generous line spacing and letter spacing for refined feel.
+4. Balanced Color Palette
+Use a calm, neutral base (white, soft gray, muted beige).
+Add 1–2 sophisticated accent colors for highlights and buttons.
+Maintain strong contrast for readability, but avoid harsh or neon tones.
+5. Rounded Corners and Soft Shadows
+Use generous corner rounding to soften the interface (e.g., buttons, cards).
+Apply shadows subtly to create depth without distraction.
+Avoid hard outlines or overly harsh drop shadows.
+6. Visual Harmony and Alignment
+Align text and components to a consistent grid or baseline.
+Ensure elements are visually balanced — symmetry or intentional asymmetry.
+Maintain even margins and paddings throughout.
+7. Subtle Animations
+Use smooth transitions for hovers, page loads, or content reveal.
+Avoid flashy effects; favor fade-ins, gentle slides, and scale transitions.
+Animation should enhance UX, not draw attention to itself.
+8. Responsive and Scalable
+Design mobile-first, then scale up for larger screens.
+Ensure layouts adapt gracefully to various screen sizes.
+Avoid fixed widths or cramped layouts on small devices.
+9. Elegant Interactions
+Buttons should feel tactile — clean hover states, subtle presses.
+Forms should be intuitive and minimal, with clear labels and helpful feedback.
+Keep micro-interactions tasteful and refined.
+10. Minimal, Iconic Aesthetic
+Follow “less but better” principle — reduce to essentials.
+Use icons sparingly and only when they add meaning.
+Ensure every visual element feels purposeful, polished, and modern."""
 
     # File type specific instructions
     FILE_TYPE_INSTRUCTIONS = {
