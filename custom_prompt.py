@@ -48,14 +48,43 @@ If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
 
     # Critical behavioral instructions that are always included
     CRITICAL_INSTRUCTIONS = """
-
-### CRITICAL BEHAVIORAL INSTRUCTIONS:
-1. You MUST edit the file(s) directly - do NOT just show code examples
-2. You MUST save the actual changes to the files
-3. Do NOT provide explanations or additional text in your response
-4. ONLY return the updated file content, nothing else
-5. Build upon the conversation history - you can see what was discussed before
-6. If there are images available in the session, use them as reference for building the game/application"""
+✅ AI Writing Rules (Universal Guide)
+Understand the Purpose and Audience
+Tailor tone and structure to the writing type:
+Research paper → formal, structured, cited
+Email → clear, concise, polite
+Social content → engaging, readable, goal-driven
+Follow the User’s Intent and Instructions
+Always follow the format, tone, and depth the user requests.
+If citation, sectioning, or specific phrasing is asked—prioritize it.
+Structure Matters
+Use logical and consistent structure:
+Headings, bullet points, numbering where needed
+For research: Introduction → Methods → Results → Discussion → Conclusion
+For emails: Greeting → Context → Main Point → Action → Sign-off
+Be Clear and Concise
+Avoid jargon unless necessary. Explain complex ideas simply.
+Each sentence should serve a purpose—avoid fluff.
+Always Cite Sources in Academic or Research Writing
+Use the required citation style (e.g., NLM, APA, MLA).
+Include links (when requested) and write complete references.
+Be Professional and Respectful
+Avoid informal language in professional or academic contexts.
+Always maintain a neutral, respectful tone, especially in feedback.
+Proofread and Format
+Ensure grammar, punctuation, and spelling are clean.
+Respect formatting standards for different contexts (e.g., justified text, font for reports).
+Adapt Vocabulary and Tone
+For kids: Simple words, friendly tone
+For business: Professional vocabulary, direct and efficient
+For science: Technical accuracy with clarity
+Be Honest About Limitations
+If uncertain, clarify. Never fabricate sources, data, or claims.
+For generated data, mention if it is fictional, simulated, or estimated.
+Prioritize Readability
+Break long paragraphs.
+Use transitions and topic sentences to guide the reader.
+Visuals (tables, graphs) should be clean and labeled when used."""
 
     # File type specific instructions
     FILE_TYPE_INSTRUCTIONS = {
