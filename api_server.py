@@ -5,6 +5,13 @@ import uvicorn
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import time
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
+import functools
+import os
+import re
+import json
+from contextlib import contextmanager
 from aider.main import register_models, load_dotenv_files
 from config import settings
 from api_controller import (
