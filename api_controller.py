@@ -39,12 +39,15 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
         # Emit start event
         yield f"event: start\ndata: {json.dumps({'message': 'Starting chat...'})}\n\n"
         
+        # Add default index.md file if no files provided
+        files_to_use = request.files or ["index.md"]
+        
         # Tạo session với dynamic system reminder
         session, session_id = create_enhanced_coder_with_dynamic_reminder(
             session_id=request.session_id, 
             repo_path=request.repo_path,
             model=request.model,
-            files=request.files,
+            files=files_to_use,
             read_only_files=request.read_only_files,
             edit_format=request.edit_format,
             use_streaming=True,
@@ -102,7 +105,7 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
         request_context = {
             'type': detect_request_type(request.message),
             'urgency': detect_urgency(request.message),
-            'complexity': estimate_complexity(request.message, request.files or [])
+            'complexity': estimate_complexity(request.message, files_to_use or [])
         }
         
         analysis_message = f'Analyzing your request... (Type: {request_context["type"]}, Urgency: {request_context["urgency"]}, Complexity: {request_context["complexity"]})'
@@ -119,9 +122,9 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
         print(f"🔧 System reminder preview: {coder.gpt_prompts.system_reminder[:200]}...")
         
         # Stream file analysis
-        if request.files:
-            yield f"event: execution_step\ndata: {json.dumps({'step': 'analyzing_files', 'message': f'Analyzing files: {request.files}', 'status': 'running'})}\n\n"
-            for file in request.files:
+        if files_to_use:
+            yield f"event: execution_step\ndata: {json.dumps({'step': 'analyzing_files', 'message': f'Analyzing files: {files_to_use}', 'status': 'running'})}\n\n"
+            for file in files_to_use:
                 if os.path.exists(file):
                     with open(file, 'r', encoding='utf-8') as f:
                         content = f.read()
@@ -139,7 +142,7 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
             yield f"event: execution_step\ndata: {json.dumps({'step': 'context_analysis', 'message': f'Found {len(coder.done_messages)} previous messages in conversation history', 'status': 'complete'})}\n\n"
         
         # Chuẩn bị message với Aider's native context
-        enhanced_message = create_enhanced_message(request.message, request.files, image_files_info)
+        enhanced_message = create_enhanced_message(request.message, files_to_use, image_files_info)
         print(f"🔍 Enhanced message: {enhanced_message[:200]}..." if len(enhanced_message) > 200 else enhanced_message)
         
         # Stream AI thinking process
@@ -158,15 +161,16 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
             loop = asyncio.get_event_loop()
             
             # Stream code generation start for target files
-            if request.files:
-                for file in request.files:
+            if files_to_use:
+                for file in files_to_use:
                     file_ext = os.path.splitext(file)[1].lower()
                     language = {
                         '.html': 'html',
                         '.css': 'css', 
                         '.js': 'javascript',
                         '.py': 'python',
-                        '.json': 'json'
+                        '.json': 'json',
+                        '.md': 'markdown'
                     }.get(file_ext, 'text')
                     
                     streaming_io.stream_code_generation_start(file, language)
@@ -321,7 +325,7 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
                     message = data["message"]
                     if any(keyword in message.lower() for keyword in ['html', 'css', 'javascript', 'function', 'class', 'div']):
                         # Stream as code chunk
-                        streaming_io.stream_code_chunk(message[:50], request.files[0] if request.files else "generated.html")
+                        streaming_io.stream_code_chunk(message[:50], files_to_use[0] if files_to_use else "generated.html")
                 
             except asyncio.TimeoutError:
                 # Gửi heartbeat với more details
@@ -347,8 +351,8 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
         print(f"🔍 Response: {str(response)[:100]}..." if response else "🔍 Response: None")
         
         # Enhanced file processing with streaming
-        if request.files and len(request.files) > 0:
-            for file in request.files:
+        if files_to_use and len(files_to_use) > 0:
+            for file in files_to_use:
                 yield f"event: execution_step\ndata: {json.dumps({'step': 'processing_file', 'message': f'Processing {file}...', 'status': 'running'})}\n\n"
                 
                 # Check if file exists and read content
@@ -380,7 +384,7 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
         print(f"🔍 Edited files after extraction: {list(getattr(coder, 'aider_edited_files', []))}")
         
         # Lấy edited files SAU khi đã xử lý file extraction
-        edited_files = await get_edited_files(coder, streaming_io, request.files)
+        edited_files = await get_edited_files(coder, streaming_io, files_to_use)
         print(f"🔍 Final edited files count: {len(edited_files)}")
         
         # Stream final results
@@ -445,11 +449,14 @@ async def chat_non_stream(request):
     original_cwd = os.getcwd()
     print(f"🔍 Original cwd: {original_cwd}")
     try:
+        # Add default index.md file if no files provided
+        files_to_use = request.files or ["index.md"]
+        
         session, session_id = create_enhanced_coder_with_dynamic_reminder(
             session_id=request.session_id, 
             repo_path=request.repo_path,
             model=request.model,
-            files=request.files,
+            files=files_to_use,
             read_only_files=request.read_only_files,
             edit_format=request.edit_format,
             use_streaming=False,
@@ -476,7 +483,7 @@ async def chat_non_stream(request):
         image_files_info = get_image_files_info(coder)
         
         # Chuẩn bị message với instruction rõ ràng
-        enhanced_message = create_enhanced_message(request.message, request.files, image_files_info)
+        enhanced_message = create_enhanced_message(request.message, files_to_use, image_files_info)
         
         # Thực hiện chat
         print(f"🤖 Starting chat with message: {request.message[:100]}...")
@@ -501,7 +508,7 @@ async def chat_non_stream(request):
                 print(f"⚠️ Git commit failed: {e}")
         
         # Lấy edited files
-        edited_files = await get_edited_files(coder, io, request.files)
+        edited_files = await get_edited_files(coder, io, files_to_use)
         
         # Lấy output, errors, warnings
         output = io.get_captured_output()
@@ -596,7 +603,7 @@ async def create_session_controller(session_request):
     try:
         # Nếu không có repo_path, tạo thư mục mới với UUID trong folder temp
         repo_path = session_request.repo_path
-        files = session_request.files or []
+        files = session_request.files or ["index.md"]  # Default to index.md if no files provided
         
         if not repo_path:
             repo_path = create_temp_repo(files)

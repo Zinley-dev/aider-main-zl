@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat API Test - Streaming & Non-Streaming</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            height: 80vh;
+        }
+
+        .left-panel, .right-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .streaming-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .non-streaming-btn {
+            background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+        }
+
+        .stop-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+
+        .messages {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            height: 100%;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            background: #f8f9ff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.user {
+            border-left-color: #28a745;
+            background: #f8fff9;
+        }
+
+        .message.assistant {
+            border-left-color: #007bff;
+            background: #f8f9ff;
+        }
+
+        .message.error {
+            border-left-color: #dc3545;
+            background: #fff8f8;
+        }
+
+        .message.system {
+            border-left-color: #6c757d;
+            background: #f8f8f8;
+        }
+
+        .message.streaming {
+            border-left-color: #00d4aa;
+            background: #f0fffc;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .message-type {
+            font-weight: 600;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .message-timestamp {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .message-content {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .message-content h1, .message-content h2, .message-content h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .message-content pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+        }
+
+        .message-content code {
+            background: #f1f3f4;
+            color: #d73a49;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+        }
+
+        .message-content pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+
+        .message-content blockquote {
+            border-left: 4px solid #ddd;
+            margin: 0;
+            padding: 0 15px;
+            color: #666;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        .status-streaming {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-complete {
+            background: #cce5ff;
+            color: #0056b3;
+        }
+
+        .config-section {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .config-section h3 {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+        }
+
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #dc3545;
+        }
+
+        .status-dot.online {
+            background: #28a745;
+        }
+
+        .scrollable::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scrollable::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .scrollable::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        .scrollable::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Chat API Test</h1>
+            <p>Test both streaming and non-streaming modes with markdown rendering</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Left Panel: Controls -->
+            <div class="left-panel scrollable">
+                <div class="config-section">
+                    <h3>🔧 API Configuration</h3>
+                    <div class="api-status">
+                        <div class="status-dot" id="statusDot"></div>
+                        <span id="statusText">Checking API status...</span>
+                    </div>
+                    <div class="form-group">
+                        <label>API Base URL:</label>
+                        <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>📋 Session Configuration</h3>
+                    <div class="form-group">
+                        <label>Session ID:</label>
+                        <input type="text" id="sessionId" placeholder="Leave empty for auto-generate">
+                    </div>
+                    <div class="form-group">
+                        <label>Model:</label>
+                        <select id="model">
+                            <option value="snowx/gpt-4.1" selected>SnowX GPT-4.1</option>
+                            <option value="snowx/gpt-4o">SnowX GPT-4O</option>
+                            <option value="gpt-4o">GPT-4O</option>
+                            <option value="gpt-4o-mini">GPT-4O Mini</option>
+                            <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Repository Path:</label>
+                        <input type="text" id="repoPath" placeholder="Leave empty for temp repo">
+                    </div>
+                    <div class="form-group">
+                        <label>Files (one per line):</label>
+                        <textarea id="files" rows="3" placeholder="index.html&#10;style.css&#10;script.js">index.html</textarea>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>💬 Message</h3>
+                    <div class="form-group">
+                        <textarea id="message" rows="4" placeholder="Type your message here...">Create a simple HTML page with a button that changes color when clicked.</textarea>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <button id="streamingBtn" class="streaming-btn">🌊 Send Streaming</button>
+                    <button id="nonStreamingBtn" class="non-streaming-btn">📤 Send Non-Streaming</button>
+                    <button id="stopBtn" class="stop-btn" disabled>⏹️ Stop</button>
+                    <button id="clearBtn" class="clear-btn">🧹 Clear</button>
+                </div>
+
+                <div class="form-group">
+                    <button id="checkApiBtn">🔍 Check API</button>
+                    <button id="createSessionBtn">🎯 Create Session</button>
+                    <button id="getModelsBtn">📝 Get Models</button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Messages -->
+            <div class="right-panel">
+                <div class="messages scrollable" id="messages">
+                    <div class="message system">
+                        <div class="message-header">
+                            <span class="message-type">System</span>
+                            <span class="message-timestamp">Ready</span>
+                        </div>
+                        <div class="message-content">
+                            <h3>Welcome to Chat API Test</h3>
+                            <p>This tool lets you test both streaming and non-streaming modes of the chat API.</p>
+                            <ul>
+                                <li><strong>Streaming:</strong> Real-time response with live updates</li>
+                                <li><strong>Non-Streaming:</strong> Complete response after processing</li>
+                                <li><strong>Markdown:</strong> Responses are rendered as markdown</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentController = null;
+        let currentSessionId = null;
+
+        // DOM elements
+        const apiUrl = document.getElementById('apiUrl');
+        const sessionId = document.getElementById('sessionId');
+        const model = document.getElementById('model');
+        const repoPath = document.getElementById('repoPath');
+        const files = document.getElementById('files');
+        const message = document.getElementById('message');
+        const streamingBtn = document.getElementById('streamingBtn');
+        const nonStreamingBtn = document.getElementById('nonStreamingBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const checkApiBtn = document.getElementById('checkApiBtn');
+        const createSessionBtn = document.getElementById('createSessionBtn');
+        const getModelsBtn = document.getElementById('getModelsBtn');
+        const messages = document.getElementById('messages');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        // Utility functions
+        function addMessage(type, content, isMarkdown = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const statusIndicator = type === 'streaming' ? '<span class="status-indicator status-streaming">Live</span>' : '';
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-type">${type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                    <span class="message-timestamp">${timestamp}${statusIndicator}</span>
+                </div>
+                <div class="message-content">
+                    ${isMarkdown ? marked.parse(content) : content}
+                </div>
+            `;
+            
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+            return messageDiv;
+        }
+
+        function updateMessage(messageElement, content, isMarkdown = false) {
+            const contentDiv = messageElement.querySelector('.message-content');
+            contentDiv.innerHTML = isMarkdown ? marked.parse(content) : content;
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function setButtonsEnabled(enabled) {
+            streamingBtn.disabled = !enabled;
+            nonStreamingBtn.disabled = !enabled;
+            stopBtn.disabled = enabled;
+        }
+
+        function updateApiStatus(isOnline) {
+            statusDot.className = `status-dot ${isOnline ? 'online' : ''}`;
+            statusText.textContent = isOnline ? 'API Online' : 'API Offline';
+        }
+
+        // API functions
+        async function checkApiStatus() {
+            try {
+                const response = await fetch(`${apiUrl.value}/health`);
+                const isOnline = response.ok;
+                updateApiStatus(isOnline);
+                
+                if (isOnline) {
+                    const data = await response.json();
+                    addMessage('system', `API is online! ${JSON.stringify(data)}`);
+                } else {
+                    addMessage('error', `API returned status: ${response.status}`);
+                }
+            } catch (error) {
+                updateApiStatus(false);
+                addMessage('error', `API check failed: ${error.message}`);
+            }
+        }
+
+        async function createSession() {
+            try {
+                const requestBody = {
+                    model: model.value,
+                    files: files.value.split('\n').filter(f => f.trim()),
+                    repo_path: repoPath.value || undefined
+                };
+
+                const response = await fetch(`${apiUrl.value}/sessions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentSessionId = data.session_id;
+                    sessionId.value = currentSessionId;
+                    addMessage('system', `Session created: ${currentSessionId}`);
+                    addMessage('system', `Repository: ${data.repo_path || 'temp'}`);
+                    addMessage('system', `Files: ${data.files.join(', ')}`);
+                } else {
+                    addMessage('error', `Session creation failed: ${data.message}`);
+                }
+            } catch (error) {
+                addMessage('error', `Session creation error: ${error.message}`);
+            }
+        }
+
+        async function getModels() {
+            try {
+                const response = await fetch(`${apiUrl.value}/models`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addMessage('system', `Available models: ${data.models.join(', ')}`);
+                } else {
+                    addMessage('error', `Failed to get models: ${data.message}`);
+                }
+            } catch (error) {
+                addMessage('error', `Get models error: ${error.message}`);
+            }
+        }
+
+        async function sendStreamingMessage() {
+            if (!message.value.trim()) {
+                alert('Please enter a message');
+                return;
+            }
+
+            const sessionIdValue = sessionId.value || currentSessionId;
+            if (!sessionIdValue) {
+                alert('Please create a session first');
+                return;
+            }
+
+            setButtonsEnabled(false);
+            addMessage('user', message.value);
+            
+            let streamingMessage = null;
+            let responseContent = '';
+
+            try {
+                currentController = new AbortController();
+                
+                const response = await fetch(`${apiUrl.value}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionIdValue,
+                        message: message.value,
+                        model: model.value,
+                        files: files.value.split('\n').filter(f => f.trim()),
+                        repo_path: repoPath.value || undefined,
+                        stream: true
+                    }),
+                    signal: currentController.signal
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+                    
+                    let eventType = '';
+                    let eventData = '';
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('event: ')) {
+                            eventType = line.substring(7);
+                        } else if (line.startsWith('data: ')) {
+                            eventData = line.substring(6);
+                        } else if (line === '' && eventType && eventData) {
+                            try {
+                                const data = JSON.parse(eventData);
+                                
+                                if (eventType === 'ai_response_chunk' && data.chunk) {
+                                    responseContent += data.chunk;
+                                    
+                                    if (!streamingMessage) {
+                                        streamingMessage = addMessage('streaming', responseContent, true);
+                                    } else {
+                                        updateMessage(streamingMessage, responseContent, true);
+                                    }
+                                } else if (eventType === 'complete') {
+                                    if (streamingMessage) {
+                                        streamingMessage.className = 'message assistant';
+                                        const statusSpan = streamingMessage.querySelector('.status-indicator');
+                                        if (statusSpan) {
+                                            statusSpan.className = 'status-indicator status-complete';
+                                            statusSpan.textContent = 'Complete';
+                                        }
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('Error parsing SSE data:', e);
+                            }
+                            
+                            eventType = '';
+                            eventData = '';
+                        }
+                    }
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    addMessage('system', 'Stream stopped by user');
+                } else {
+                    addMessage('error', `Streaming error: ${error.message}`);
+                }
+            } finally {
+                setButtonsEnabled(true);
+                currentController = null;
+            }
+        }
+
+        async function sendNonStreamingMessage() {
+            if (!message.value.trim()) {
+                alert('Please enter a message');
+                return;
+            }
+
+            const sessionIdValue = sessionId.value || currentSessionId;
+            if (!sessionIdValue) {
+                alert('Please create a session first');
+                return;
+            }
+
+            setButtonsEnabled(false);
+            addMessage('user', message.value);
+            
+            try {
+                const response = await fetch(`${apiUrl.value}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionIdValue,
+                        message: message.value,
+                        model: model.value,
+                        files: files.value.split('\n').filter(f => f.trim()),
+                        repo_path: repoPath.value || undefined,
+                        stream: false
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addMessage('assistant', data.response, true);
+                    
+                    if (data.edited_files && data.edited_files.length > 0) {
+                        addMessage('system', `Modified ${data.edited_files.length} files`);
+                    }
+                    
+                    if (data.tokens_sent || data.tokens_received) {
+                        addMessage('system', `Tokens: ${data.tokens_sent} sent, ${data.tokens_received} received`);
+                    }
+                } else {
+                    addMessage('error', `Chat error: ${data.message}`);
+                }
+            } catch (error) {
+                addMessage('error', `Non-streaming error: ${error.message}`);
+            } finally {
+                setButtonsEnabled(true);
+            }
+        }
+
+        function stopStream() {
+            if (currentController) {
+                currentController.abort();
+            }
+        }
+
+        function clearMessages() {
+            messages.innerHTML = '';
+        }
+
+        // Event listeners
+        checkApiBtn.addEventListener('click', checkApiStatus);
+        createSessionBtn.addEventListener('click', createSession);
+        getModelsBtn.addEventListener('click', getModels);
+        streamingBtn.addEventListener('click', sendStreamingMessage);
+        nonStreamingBtn.addEventListener('click', sendNonStreamingMessage);
+        stopBtn.addEventListener('click', stopStream);
+        clearBtn.addEventListener('click', clearMessages);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            checkApiStatus();
+        });
+    </script>
+</body>
+</html>

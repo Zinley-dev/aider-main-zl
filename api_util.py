@@ -479,8 +479,8 @@ def create_temp_repo(files: List[str] = None) -> str:
     """
     Tạo temporary repo directory
     """
-    # temp_dir = os.path.join("/Users/hoangnm/Desktop/test", "temp")
-    temp_dir = os.path.join("/app", "temp")
+    temp_dir = os.path.join("/Users/hoangnm/Desktop/test", "temp")
+    # temp_dir = os.path.join("/app", "temp")
     
     # Nếu không có files, dùng mặc định ["index.md"]
     if not files:
