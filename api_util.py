@@ -28,6 +28,7 @@ def get_or_create_session(session_id: str = None, repo_path: str = None, model: 
     try:
         # Lưu thư mục hiện tại
         original_cwd = os.getcwd()
+        print(f"Original working directory: {original_cwd}")
         
         # Thiết lập working directory
         if repo_path and os.path.exists(repo_path):
@@ -150,22 +151,127 @@ def get_image_files_info(coder):
 
 def create_enhanced_message(message: str, files: List[str], image_files_info: str) -> str:
     """
-    Tạo enhanced message với instructions
+    Tạo enhanced message - now returns clean user message without embedded instructions
     """
-    return f"""
-{message}{image_files_info}
+    return f"{message}{image_files_info}"
 
-CRITICAL INSTRUCTIONS:
+def get_system_prompt(files: List[str]) -> str:
+    """
+    Tạo system prompt với critical instructions - Legacy function, use create_dynamic_system_reminder instead
+    """
+    return f"""You are a code editor that MUST follow these critical instructions:
 1. You MUST edit the file(s) directly - do NOT just show code examples
 2. You MUST save the actual changes to the files
 3. Do NOT provide explanations or additional text in your response
 4. ONLY return the updated file content, nothing else
 5. The files to edit are: {', '.join(files) if files else 'the files in this chat'}
-6. If there are images available in the session (listed above), use them as reference for building the game/application
+6. If there are images available in the session, use them as reference for building the game/application
 7. Build upon the conversation history - you can see what was discussed before
 
-Edit the files now and return ONLY the updated content.
-"""
+Be direct and edit files immediately without explanations."""
+
+def detect_request_type(message: str) -> str:
+    """Detect the type of request from message content"""
+    message_lower = message.lower()
+    # Check for add_feature first since it's more specific
+    if any(word in message_lower for word in ['add', 'insert', 'include']) and 'feature' in message_lower:
+        return 'add_feature'
+    elif any(word in message_lower for word in ['create', 'new', 'build', 'make', 'generate']):
+        return 'create_new'
+    elif any(word in message_lower for word in ['fix', 'debug', 'error', 'bug', 'issue']):
+        return 'debug'
+    elif any(word in message_lower for word in ['refactor', 'improve', 'optimize', 'clean']):
+        return 'refactor'
+    elif any(word in message_lower for word in ['update', 'modify', 'change', 'edit']):
+        return 'update'
+    elif any(word in message_lower for word in ['add', 'insert', 'include']):
+        return 'add_feature'
+    return 'general'
+
+def detect_urgency(message: str) -> str:
+    """Detect urgency level from message"""
+    urgent_words = ['urgent', 'asap', 'quickly', 'fast', 'immediately', 'now', 'critical']
+    return 'high' if any(word in message.lower() for word in urgent_words) else 'normal'
+
+def estimate_complexity(message: str, files: List[str]) -> str:
+    """Estimate complexity of the request"""
+    file_count = len(files) if files else 0
+    message_length = len(message)
+    
+    # Check for complex keywords
+    complex_keywords = ['algorithm', 'database', 'api', 'framework', 'architecture', 'system', 'integration']
+    has_complex_keywords = any(keyword in message.lower() for keyword in complex_keywords)
+    
+    if file_count > 3 or message_length > 500 or has_complex_keywords:
+        return 'high'
+    elif file_count > 1 or message_length > 200:
+        return 'medium'
+    return 'low'
+
+def create_dynamic_system_reminder(
+    files: List[str], 
+    request_context: dict,
+    image_files: List[str] = None,
+    conversation_history: List[dict] = None
+) -> str:
+    """
+    Create contextual system reminder based on request context using custom prompt system
+    """
+    from custom_prompt import create_custom_dynamic_system_reminder
+    
+    return create_custom_dynamic_system_reminder(
+        files=files,
+        request_context=request_context,
+        image_files=image_files,
+        conversation_history=conversation_history
+    )
+
+def create_optimized_system_reminder(
+    files: List[str], 
+    request_context: dict,
+    image_files: List[str] = None,
+    conversation_history: List[dict] = None
+) -> str:
+    """
+    Create optimized system reminder using specialized templates based on file types and request context
+    """
+    from custom_prompt import (
+        create_web_prompt, 
+        create_python_prompt, 
+        create_debug_prompt, 
+        create_refactor_prompt,
+        create_custom_dynamic_system_reminder
+    )
+    
+    # Determine the best template based on context
+    request_type = request_context.get('type', 'general')
+    
+    # Check for specific request types first
+    if request_type == 'debug':
+        return create_debug_prompt(files, request_context)
+    elif request_type == 'refactor':
+        return create_refactor_prompt(files, request_context)
+    
+    # Check for file type patterns
+    if files:
+        file_extensions = {os.path.splitext(f)[1].lower() for f in files}
+        
+        # Web development files
+        web_extensions = {'.html', '.css', '.js', '.ts', '.jsx', '.tsx'}
+        if web_extensions.intersection(file_extensions):
+            return create_web_prompt(files, request_context, image_files)
+        
+        # Python files
+        if '.py' in file_extensions:
+            return create_python_prompt(files, request_context)
+    
+    # Default to general template
+    return create_custom_dynamic_system_reminder(
+        files=files,
+        request_context=request_context,
+        image_files=image_files,
+        conversation_history=conversation_history
+    )
 
 async def handle_file_extraction(request, response: str, io, coder):
     """
@@ -373,7 +479,8 @@ def create_temp_repo(files: List[str] = None) -> str:
     """
     Tạo temporary repo directory
     """
-    temp_dir = os.path.join("/app", "temp")
+    temp_dir = os.path.join("/Users/hoangnm/Desktop/test", "temp")
+    # temp_dir = os.path.join("/app", "temp")
     
     # Nếu không có files, dùng mặc định ["index.html"]
     if not files:
@@ -396,6 +503,108 @@ def create_temp_repo(files: List[str] = None) -> str:
     print(f"Created empty index.html: {index_file}")
     
     return repo_path
+
+def apply_dynamic_system_reminder(coder, files: List[str], request_context: dict, image_files: List[str] = None):
+    """
+    Apply dynamic system reminder to an existing coder instance
+    """
+    # Get image files from coder if not provided
+    if image_files is None:
+        image_files = []
+        if hasattr(coder, 'abs_read_only_fnames') and coder.abs_read_only_fnames:
+            for abs_path in coder.abs_read_only_fnames:
+                rel_path = coder.get_rel_fname(abs_path)
+                file_ext = os.path.splitext(rel_path)[1].lower()
+                if file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg']:
+                    image_files.append(rel_path)
+    
+    # Create dynamic reminder
+    dynamic_reminder = create_dynamic_system_reminder(
+        files=files,
+        request_context=request_context,
+        image_files=image_files,
+        conversation_history=getattr(coder, 'cur_messages', [])
+    )
+    
+    # Apply to coder
+    coder.gpt_prompts.system_reminder = dynamic_reminder
+    
+    # Log the dynamic reminder for debugging
+    print(f"🔧 Applied dynamic system reminder: {len(dynamic_reminder)} chars")
+    print(f"🔧 Request context: {request_context}")
+    print(f"🔧 Image files: {image_files}")
+    
+    return coder
+
+def create_enhanced_coder_with_dynamic_reminder(
+    session_id: str = None,
+    repo_path: str = None,
+    model: str = None,
+    files: List[str] = None,
+    read_only_files: List[str] = None,
+    edit_format: str = "diff",
+    auto_commits: bool = True,
+    use_streaming: bool = False,
+    request_message: str = "",
+    session_context: dict = None
+) -> tuple:
+    """
+    Create or get coder with dynamically generated system reminder
+    """
+    # Get or create base session
+    session, session_id = get_or_create_session(
+        session_id=session_id,
+        repo_path=repo_path,
+        model=model,
+        files=files,
+        read_only_files=read_only_files,
+        edit_format=edit_format,
+        auto_commits=auto_commits,
+        use_streaming=use_streaming
+    )
+    
+    coder = session["coder"]
+    
+    # Analyze request context
+    request_context = {
+        'type': detect_request_type(request_message),
+        'urgency': detect_urgency(request_message),
+        'complexity': estimate_complexity(request_message, files or []),
+        'user_preferences': (session_context or {}).get('user_preferences', {})
+    }
+    
+    # Apply dynamic system reminder
+    apply_dynamic_system_reminder(coder, files or [], request_context)
+    
+    return session, session_id
+
+def get_session_context(session_id: str) -> dict:
+    """
+    Get session context for enhanced coder creation
+    """
+    session = session_manager.get_session(session_id)
+    if not session:
+        return {}
+    
+    # Extract context from session
+    context = {
+        'repo_path': session.get('repo_path'),
+        'user_preferences': session.get('user_preferences', {}),
+        'session_history': session.get('session_history', []),
+        'last_activity': session.get('last_activity')
+    }
+    
+    return context
+
+def update_session_context(session_id: str, context_updates: dict):
+    """
+    Update session context with new information
+    """
+    session = session_manager.get_session(session_id)
+    if session:
+        for key, value in context_updates.items():
+            session[key] = value
+        print(f"🔧 Updated session context: {context_updates}")
 
 def get_session_manager():
     """
