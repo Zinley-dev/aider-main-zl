@@ -690,169 +690,109 @@
 
             switch (eventType) {
                 case 'start':
-                    addMessage('system', '🚀 Starting code generation...', data);
+                    addMessage('system', '🚀 Starting code generation', {});
                     break;
 
                 case 'ai_thinking':
-                    addMessage('ai-thinking', `🤔 ${data.message}`, data);
+                    addMessage('ai-thinking', '🤔 AI Thinking', {});
                     break;
 
                 case 'execution_step':
-                    const statusIcon = data.status === 'running' ? '🔄' :
-                        data.status === 'complete' ? '✅' : '❌';
-                    addMessage('execution-step', `${statusIcon} ${data.message}`, data);
+                    addMessage('execution-step', '⚙️ Execution Step', {});
                     break;
 
                 case 'code_gen_start':
-                    addMessage('code-generation', `🎯 Starting code generation for ${data.filename}`, data);
+                    addMessage('code-generation', '🎯 Code Generation Started', {});
                     break;
 
                 case 'code_chunk':
-                    addMessage('code-generation', `📝 Code chunk for ${data.filename}`, data, data.chunk);
+                    // Skip individual chunks - too verbose
                     break;
 
                 case 'code_gen_complete':
-                    addMessage('code-generation', `✅ Completed ${data.filename} (${data.total_lines} lines)`, data);
+                    addMessage('code-generation', '✅ Code Generation Complete', {});
                     break;
 
                 case 'file_analysis':
-                    addMessage('file-analysis', `📊 ${data.filename}: ${data.lines} lines, ${data.characters} characters`, data);
+                    addMessage('file-analysis', '📊 File Analysis', {});
                     break;
 
                 case 'code_preview':
-                    addMessage('file-analysis', `👀 Preview of ${data.filename}`, data, data.preview);
+                    // Skip preview - too verbose
                     break;
 
                 case 'file_write':
-                    const writeIcon = data.success ? '✅' : '❌';
-                    addMessage('system', `${writeIcon} ${data.success ? 'Wrote' : 'Failed to write'} ${data.filename} (${data.content_length} chars)`, data);
+                    addMessage('system', '💾 File Write', {});
                     if (data.success) {
                         streamStats.files++;
-                        streamStats.characters += data.content_length;
+                        streamStats.characters += data.content_length || 0;
                     }
                     break;
 
                 case 'file_mod_start':
-                    addMessage('system', `🔧 Starting ${data.action} for ${data.filename}`, data);
+                    addMessage('system', '🔧 File Modification Started', {});
                     break;
 
                 case 'file_mod_step':
-                    addMessage('system', `⚙️ ${data.filename}: ${data.step}`, data);
+                    // Skip individual steps - too verbose
                     break;
 
                 case 'file_mod_complete':
-                    const modIcon = data.success ? '✅' : '❌';
-                    addMessage('system', `${modIcon} ${data.filename}: ${data.details}`, data);
+                    addMessage('system', '✅ File Modification Complete', {});
                     break;
 
                 case 'ai_response_start':
-                    addMessage('ai-thinking', '🤖 AI is starting to generate response...', data);
-                    // Create placeholder for streaming AI response
-                    aiResponseBuffer = '';
-                    aiResponseElement = addMessage('streaming', '🤖 AI Response (Waiting for chunks...)', data, '', true);
+                    addMessage('ai-thinking', '🤖 AI Response Started', {});
                     break;
 
                 case 'ai_response_chunk':
-                    // Accumulate chunk
-                    aiResponseBuffer += data.chunk;
-
-                    // Update the streaming message
-                    if (aiResponseElement) {
-                        const contentDiv = aiResponseElement.querySelector('.message-content');
-                        const codeBlock = aiResponseElement.querySelector('.code-block');
-                        if (codeBlock) {
-                            codeBlock.textContent = aiResponseBuffer;
-                        } else {
-                            contentDiv.innerHTML = `
-                                🤖 AI Response (Streaming... ${aiResponseBuffer.length} chars)
-                                <div class="code-block">${escapeHtml(aiResponseBuffer)}</div>
-                            `;
-                        }
-                    }
-
-                    // Also add individual chunk messages for detailed tracking
-                    addMessage('system', `📝 AI Chunk: ${data.chunk.substring(0, 50)}${data.chunk.length > 50 ? '...' : ''}`, data);
+                    // Skip chunks - too verbose
                     break;
 
                 case 'ai_chunk_debug':
-                    // Show raw chunks for debugging - with special styling
-                    addMessage('chunk-debug', `🔍 Raw Chunk #${data.chunk_count}: "${data.chunk}"`, data);
-
-                    // Also update cumulative AI response if we're in streaming mode
-                    if (aiResponseElement) {
-                        const chunkPreview = data.chunk.length > 20 ? data.chunk.substring(0, 20) + '...' : data.chunk;
-                        const contentDiv = aiResponseElement.querySelector('.message-content');
-                        contentDiv.innerHTML = `
-                            🤖 AI Response (Streaming... chunk #${data.chunk_count})
-                            <div class="file-preview">Latest chunk: ${escapeHtml(chunkPreview)}</div>
-                        `;
-                    }
+                    // Skip debug chunks - too verbose
                     break;
 
                 case 'ai_response_complete':
-                    addMessage('ai-thinking', `✅ AI response generation completed (${aiResponseBuffer.length} chars)`, data);
-
-                    // Update final message
-                    if (aiResponseElement) {
-                        // Remove streaming class to stop animation
-                        aiResponseElement.className = aiResponseElement.className.replace('streaming', 'assistant');
-
-                        const contentDiv = aiResponseElement.querySelector('.message-content');
-                        contentDiv.innerHTML = `
-                            🤖 AI Response (Complete - ${aiResponseBuffer.length} chars)
-                            <div class="code-block">${escapeHtml(aiResponseBuffer)}</div>
-                        `;
-                    }
-
-                    // Reset buffer
-                    aiResponseBuffer = '';
-                    aiResponseElement = null;
+                    addMessage('ai-thinking', '✅ AI Response Complete', {});
                     break;
 
                 case 'ai_output':
-                    if (data.is_chunk) {
-                        addMessage('assistant', `🤖 AI Output (chunk ${data.chunk_index + 1}/${data.total_chunks})`, data, data.message);
-                    } else {
-                        addMessage('assistant', '🤖 AI Output', data, data.message);
-                    }
+                    addMessage('assistant', '🤖 AI Output', {});
                     break;
 
                 case 'tool_output':
-                    addMessage('system', `🔧 Tool: ${data.message}`, data);
+                    addMessage('system', '🔧 Tool Output', {});
                     break;
 
                 case 'tool_error':
-                    addMessage('error', `❌ Tool Error: ${data.message}`, data);
+                    addMessage('error', '❌ Tool Error', {});
                     break;
 
                 case 'tool_warning':
-                    addMessage('system', `⚠️ Tool Warning: ${data.message}`, data);
+                    addMessage('system', '⚠️ Tool Warning', {});
                     break;
 
                 case 'file_summary':
-                    addMessage('system', `📄 Generated ${data.filename} with ${data.content_length} characters`, data);
+                    addMessage('system', '📄 File Summary', {});
                     break;
 
                 case 'completion_stats':
-                    addMessage('system', `📊 Completion Stats: ${data.files_modified} files, ${data.events_streamed} events, ${data.total_characters} characters`, data);
-                    streamStats.files = data.files_modified;
-                    streamStats.characters = data.total_characters;
+                    addMessage('system', '📊 Completion Stats', {});
+                    streamStats.files = data.files_modified || 0;
+                    streamStats.characters = data.total_characters || 0;
                     break;
 
                 case 'response':
-                    if (data.type === 'file_content') {
-                        addMessage('assistant', `✅ Generated ${data.filename}`, data, data.message);
-                    } else {
-                        addMessage('assistant', '🤖 Response', data, data.message);
-                    }
+                    addMessage('assistant', '🤖 Response', {});
                     break;
 
                 case 'complete':
-                    addMessage('system', '🎉 Code generation completed!', data);
+                    addMessage('system', '🎉 Code generation completed!', {});
                     break;
 
                 case 'error':
-                    addMessage('error', `❌ Error: ${data.message}`, data);
+                    addMessage('error', '❌ Error', {});
                     break;
 
                 case 'heartbeat':
@@ -860,7 +800,7 @@
                     break;
 
                 default:
-                    addMessage('system', `📡 ${eventType}: ${data.message || JSON.stringify(data)}`, data);
+                    addMessage('system', `📡 ${eventType}`, {});
             }
         }
 
