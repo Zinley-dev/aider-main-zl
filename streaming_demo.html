@@ -44,6 +44,95 @@
         }
 
         .main-content {
+            padding: 20px;
+        }
+
+        .session-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 10px 10px 0 0;
+            padding: 10px;
+            gap: 10px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .session-tab {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            min-width: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .session-tab:hover {
+            background: #e9ecef;
+        }
+
+        .session-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .session-tab .close-btn {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 10px;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .session-tab.active .close-btn {
+            color: white;
+        }
+
+        .session-tab .close-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .add-session-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .add-session-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .session-content {
+            display: none;
+            background: white;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .session-content.active {
+            display: block;
+        }
+
+        .session-panels {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
@@ -55,7 +144,7 @@
             background: #f8f9fa;
             border-radius: 10px;
             padding: 20px;
-            height: 80vh;
+            height: 75vh;
             overflow-y: auto;
         }
 
@@ -355,6 +444,44 @@
         .scrollable::-webkit-scrollbar-thumb:hover {
             background: #764ba2;
         }
+
+        .randomPrompt:hover {
+            background: #138496 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .openFile:hover:not(:disabled) {
+            background: #218838 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .openFile:disabled {
+            background: #6c757d !important;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .copyPath:hover:not(:disabled) {
+            background: #5a2d91 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .copyPath:disabled {
+            background: #6c757d !important;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .checkServer:hover {
+            background: #e8650e !important;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+        }
     </style>
 </head>
 
@@ -366,506 +493,646 @@
         </div>
 
         <div class="main-content">
-            <div class="left-panel scrollable">
-                <div class="session-info" id="sessionInfo">
-                    <h3>📋 Session Information</h3>
-                    <p><strong>API Server:</strong> <span id="apiServer">http://localhost:8000</span></p>
-                    <p><strong>Session ID:</strong> <span id="sessionId">Not created</span></p>
-                    <p><strong>Repository:</strong> <span id="repoPath">Not set</span></p>
-                    <p><strong>Model:</strong> <span id="currentModel">Not selected</span></p>
-                    <p><strong>Files:</strong> <span id="currentFiles">None</span></p>
-                </div>
-
-                <div class="form-group">
-                    <label for="model">🤖 Model:</label>
-                    <select id="model">
-                        <option value="snowx/gpt-4.1" selected>SnowX GPT-4.1 (Default)</option>
-                        <option value="snowx/gpt-4o">SnowX GPT-4O</option>
-                        <option value="gpt-4o">GPT-4O</option>
-                        <option value="gpt-4o-mini">GPT-4O Mini</option>
-                        <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                        <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="files">📁 Files (one per line):</label>
-                    <textarea id="files" placeholder="index.html&#10;style.css&#10;script.js">index.html</textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="message">💬 Message:</label>
-                    <textarea id="message"
-                        placeholder="Create a beautiful landing page with modern design...">Create a simple HTML page with hello world</textarea>
-                </div>
-
-                <div class="form-group">
-                    <button id="createSession">🎯 Create New Session</button>
-                    <button id="getFiles" disabled>📁 Get Session Files</button>
-                    <button id="sendMessage" disabled>🚀 Send Message (Streaming)</button>
-                    <button id="stopStream" disabled>⏹️ Stop Stream</button>
-                </div>
-
-                <div class="stats-grid" id="statsGrid" style="display: none;">
-                    <div class="stat-card">
-                        <div class="stat-value" id="eventsCount">0</div>
-                        <div class="stat-label">Events Streamed</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="filesModified">0</div>
-                        <div class="stat-label">Files Modified</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalChars">0</div>
-                        <div class="stat-label">Total Characters</div>
-                    </div>
-                </div>
+            <div class="session-tabs" id="sessionTabs">
+                <button class="add-session-btn" id="addSessionBtn">+ New Session</button>
             </div>
 
-            <div class="right-panel">
-                <div class="messages scrollable" id="messages">
-                    <h3>💬 Real-time Code Generation Progress</h3>
-                    <div class="message system">
-                        <div class="message-header">
-                            <span class="message-type">System</span>
-                            <span class="message-timestamp">Ready</span>
-                        </div>
-                        <div class="message-content">
-                            Welcome to the enhanced Aider API streaming demo!
-                            Create a session first, then send messages to see real-time code generation.
-                        </div>
-                    </div>
-                </div>
+            <div id="sessionContents">
+                <!-- Session contents will be dynamically created -->
             </div>
         </div>
     </div>
 
     <script>
         // Configuration
-        const API_BASE_URL = 'https://aider.snowx.ai';
+        // const API_BASE_URL = 'https://aider.snowx.ai';
+        const API_BASE_URL = 'http://localhost:8000';
 
-        let currentSessionId = null;
-        let currentController = null;
-        let eventCounts = {
-            total: 0,
-            ai_output: 0,
-            ai_chunk_debug: 0,
-            ai_response_chunk: 0,
-            code_chunk: 0,
-            file_write: 0,
-            execution_step: 0
-        };
-        let streamStats = {
-            events: 0,
-            files: 0,
-            characters: 0
-        };
+        // Sample prompts for educational games
+        const samplePrompts = [
+            "Tạo một game HTML/CSS/JavaScript đơn giản cho trẻ 5 tuổi học tiếng Anh. Trên màn hình có các hình vuông với màu sắc (red, blue, green, yellow…) và các từ tiếng Anh tương ứng bị xáo trộn. Trẻ sẽ kéo từ vào đúng ô màu tương ứng. Khi đúng thì hiện hiệu ứng vui nhộn và phát âm từ đó. Giao diện to, dễ thao tác.",
+            
+            "Viết một game nhỏ bằng HTML/CSS/JS, trong đó trẻ em nghe âm thanh tiếng kêu của con vật (ví dụ: gâu gâu, meo meo) và chọn đúng hình ảnh con vật (dog, cat, cow…). Khi chọn đúng thì phát âm từ tiếng Anh của con vật và hiện mặt cười. Dữ liệu có thể là 4–5 con vật thông dụng. Hình ảnh lớn, màu sắc sinh động.",
+            
+            "Tạo một game HTML/CSS/JS giúp trẻ học bảng chữ cái tiếng Anh. Trò chơi hiển thị các chữ cái từ A-Z bị xáo trộn, bé có thể kéo từng chữ cái vào đúng vị trí trong hàng ngang A-Z. Khi hoàn thành đúng sẽ có hiệu ứng khen thưởng (nhạc, mặt cười…). Thiết kế đơn giản, trực quan.",
+            
+            "Viết một trò chơi học tiếng Anh cho trẻ nhỏ bằng HTML/JS. Trên màn hình có 4 hình ảnh (ví dụ: apple, banana, car, dog) và 4 từ tiếng Anh tương ứng bị xáo trộn. Bé sẽ kéo từ vào đúng hình. Khi đúng, hiện hiệu ứng sáng và phát âm từ vựng. Ưu tiên code rõ ràng, dễ tùy biến thêm dữ liệu.",
+            
+            "Tạo một game HTML/JS trong đó có một nút 'Listen' để phát một từ tiếng Anh như 'apple' hoặc 'banana'. Trên màn hình có 4 hình ảnh, bé cần chọn hình đúng với từ được nghe. Nếu chọn đúng, hiển thị hiệu ứng khen ngợi và phát âm từ đó. Nếu sai, có thể cho chọn lại. Giao diện to, rõ ràng, phù hợp với bé 5 tuổi."
+        ];
 
-        // AI response aggregation
-        let aiResponseBuffer = '';
-        let aiResponseElement = null;
+        // Session management
+        let sessions = new Map();
+        let currentSessionTabId = null;
+        let sessionCounter = 0;
 
         // DOM elements
-        const sessionInfo = document.getElementById('sessionInfo');
-        const sessionIdSpan = document.getElementById('sessionId');
-        const repoPathSpan = document.getElementById('repoPath');
-        const currentModelSpan = document.getElementById('currentModel');
-        const currentFilesSpan = document.getElementById('currentFiles');
-        const messagesDiv = document.getElementById('messages');
-        const createSessionBtn = document.getElementById('createSession');
-        const getFilesBtn = document.getElementById('getFiles');
-        const sendMessageBtn = document.getElementById('sendMessage');
-        const stopStreamBtn = document.getElementById('stopStream');
-        const statsGrid = document.getElementById('statsGrid');
-        const eventsCountSpan = document.getElementById('eventsCount');
-        const filesModifiedSpan = document.getElementById('filesModified');
-        const totalCharsSpan = document.getElementById('totalChars');
+        const sessionTabs = document.getElementById('sessionTabs');
+        const addSessionBtn = document.getElementById('addSessionBtn');
+        const sessionContents = document.getElementById('sessionContents');
 
-        // Create session
-        createSessionBtn.addEventListener('click', async () => {
-            const model = document.getElementById('model').value;
-            const files = document.getElementById('files').value.split('\n').filter(f => f.trim());
+        // Get random sample prompt
+        function getRandomPrompt() {
+            const randomIndex = Math.floor(Math.random() * samplePrompts.length);
+            return samplePrompts[randomIndex];
+        }
 
-            try {
-                createSessionBtn.disabled = true;
-                createSessionBtn.textContent = '🔄 Creating Session...';
+        // Session management functions
+        function createNewSessionTab() {
+            sessionCounter++;
+            const tabId = `session_${sessionCounter}`;
+            
+            const sessionData = {
+                id: tabId,
+                sessionId: null,
+                controller: null,
+                eventCounts: {
+                    total: 0,
+                    ai_output: 0,
+                    ai_chunk_debug: 0,
+                    ai_response_chunk: 0,
+                    code_chunk: 0,
+                    file_write: 0,
+                    execution_step: 0
+                },
+                streamStats: {
+                    events: 0,
+                    files: 0,
+                    characters: 0
+                },
+                aiResponseBuffer: '',
+                aiResponseElement: null,
+                lastMessageType: null,
+                lastMessageElement: null,
+                messageCounter: 0
+            };
 
-                const response = await fetch(`${API_BASE_URL}/sessions`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        model: model,
-                        files: files
-                    })
-                });
+            sessions.set(tabId, sessionData);
+            createSessionTabUI(tabId);
+            createSessionContentUI(tabId);
+            switchToSession(tabId);
+        }
 
-                const data = await response.json();
+        function createSessionTabUI(tabId) {
+            const tabElement = document.createElement('div');
+            tabElement.className = 'session-tab';
+            tabElement.id = `tab_${tabId}`;
+            tabElement.innerHTML = `
+                <span>Session ${tabId.split('_')[1]} 🎲</span>
+                <button class="close-btn" onclick="closeSession('${tabId}')">&times;</button>
+            `;
+            
+            tabElement.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('close-btn')) {
+                    switchToSession(tabId);
+                }
+            });
 
-                if (response.ok) {
-                    currentSessionId = data.session_id;
-                    updateSessionInfo(data);
-                    sendMessageBtn.disabled = false;
+            sessionTabs.insertBefore(tabElement, addSessionBtn);
+        }
+
+        function createSessionContentUI(tabId) {
+            const contentElement = document.createElement('div');
+            contentElement.className = 'session-content';
+            contentElement.id = `content_${tabId}`;
+            
+            // Get random prompt for this session
+            const randomPrompt = getRandomPrompt();
+            
+            contentElement.innerHTML = `
+                <div class="session-panels">
+                    <div class="left-panel scrollable">
+                        <div class="session-info">
+                            <h3>📋 Session Information</h3>
+                            <p><strong>API Server:</strong> <span class="apiServer">${API_BASE_URL}</span></p>
+                            <p><strong>Session ID:</strong> <span class="sessionId">Not created</span></p>
+                            <p><strong>Repository:</strong> <span class="repoPath">Not set</span></p>
+                            <p><strong>Model:</strong> <span class="currentModel">Not selected</span></p>
+                            <p><strong>Files:</strong> <span class="currentFiles">None</span></p>
+                            <div style="margin-top: 10px;">
+                                <button class="openFile" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.3s ease;" disabled title="Open index.html from repository">📁 Open File</button>
+                                <button class="copyPath" style="background: #6f42c1; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.3s ease; margin-left: 5px;" disabled title="Copy file path to clipboard">📋 Copy Path</button>
+                                <br>
+                                <button class="checkServer" style="background: #fd7e14; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.3s ease; margin-top: 5px;" title="Check API server status">🔍 Check Server</button>
+                                <br>
+                                <small style="color: #666; font-size: 10px; margin-top: 5px; display: block;">Opens repository/index.html in new tab, copy path if blocked, or check server health</small>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>🤖 Model:</label>
+                            <select class="model">
+                                <option value="snowx/gpt-4.1" selected>SnowX GPT-4.1 (Default)</option>
+                                <option value="snowx/gpt-4o">SnowX GPT-4O</option>
+                                <option value="gpt-4o">GPT-4O</option>
+                                <option value="gpt-4o-mini">GPT-4O Mini</option>
+                                <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                                <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>📁 Files (one per line):</label>
+                            <textarea class="files" placeholder="index.html&#10;style.css&#10;script.js">index.html</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>💬 Message:</label>
+                            <textarea class="message" placeholder="Create a beautiful landing page with modern design...">${randomPrompt}</textarea>
+                            <div style="margin-top: 5px;">
+                                <button class="randomPrompt" type="button" style="background: #17a2b8; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.3s ease;">🎲 Random Prompt</button>
+                                <small style="margin-left: 10px; color: #666; font-size: 11px;">Educational game prompts for kids - Auto-selected</small>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <button class="createSession">🎯 Create New Session</button>
+                            <button class="getFiles" disabled>📁 Get Session Files</button>
+                            <button class="sendMessage" disabled>🚀 Send Message (Streaming)</button>
+                            <button class="stopStream" disabled>⏹️ Stop Stream</button>
+                        </div>
+
+                        <div class="stats-grid" style="display: none;">
+                            <div class="stat-card">
+                                <div class="stat-value eventsCount">0</div>
+                                <div class="stat-label">Events Streamed</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value filesModified">0</div>
+                                <div class="stat-label">Files Modified</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value totalChars">0</div>
+                                <div class="stat-label">Total Characters</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="right-panel">
+                        <div class="messages scrollable">
+                            <h3>💬 Real-time Code Generation Progress</h3>
+                            <div class="message system">
+                                <div class="message-header">
+                                    <span class="message-type">System</span>
+                                    <span class="message-timestamp">Ready</span>
+                                </div>
+                                <div class="message-content">
+                                    Welcome to the enhanced Aider API streaming demo!
+                                    Create a session first, then send messages to see real-time code generation.
+                                    <br><br>
+                                    🎲 <strong>New:</strong> Each session starts with a random educational game prompt! Click "Random Prompt" to try another one.
+                                    <br><br>
+                                    📁 <strong>New:</strong> "Open File" button to quickly open index.html from repository! If blocked, use "Copy Path" button.
+                                    <br><br>
+                                    🔍 <strong>New:</strong> "Check Server" button to diagnose API server issues and connection problems!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            sessionContents.appendChild(contentElement);
+            setupSessionEventHandlers(tabId);
+        }
+
+        function setupSessionEventHandlers(tabId) {
+            const content = document.getElementById(`content_${tabId}`);
+            const session = sessions.get(tabId);
+
+            // Get session-specific elements
+            const createSessionBtn = content.querySelector('.createSession');
+            const getFilesBtn = content.querySelector('.getFiles');
+            const sendMessageBtn = content.querySelector('.sendMessage');
+            const stopStreamBtn = content.querySelector('.stopStream');
+            const modelSelect = content.querySelector('.model');
+            const randomPromptBtn = content.querySelector('.randomPrompt');
+            const messageTextarea = content.querySelector('.message');
+            const openFileBtn = content.querySelector('.openFile');
+            const copyPathBtn = content.querySelector('.copyPath');
+            const checkServerBtn = content.querySelector('.checkServer');
+
+            // Model change handler
+            modelSelect.addEventListener('change', function() {
+                content.querySelector('.currentModel').textContent = this.value;
+            });
+
+            // Random prompt handler
+            randomPromptBtn.addEventListener('click', function() {
+                const newPrompt = getRandomPrompt();
+                messageTextarea.value = newPrompt;
+                messageTextarea.focus();
+                
+                // Visual feedback
+                randomPromptBtn.textContent = '✨ Randomized!';
+                setTimeout(() => {
+                    randomPromptBtn.textContent = '🎲 Random Prompt';
+                }, 1000);
+            });
+
+            // Open file handler
+            openFileBtn.addEventListener('click', function() {
+                const repoPath = content.querySelector('.repoPath').textContent;
+                if (repoPath && repoPath !== 'Not set') {
+                    // Build file path: repository + index.html
+                    let filePath;
+                    if (repoPath.startsWith('http://') || repoPath.startsWith('https://')) {
+                        // If it's already a URL, append index.html
+                        filePath = repoPath.endsWith('/') ? repoPath + 'index.html' : repoPath + '/index.html';
+                    } else {
+                        // If it's a local path, convert to file:// URL
+                        const cleanPath = repoPath.replace(/\\/g, '/');
+                        filePath = cleanPath.endsWith('/') ? 'file://' + cleanPath + 'index.html' : 'file://' + cleanPath + '/index.html';
+                    }
+                    
+                    console.log('Attempting to open file:', filePath);
+                    
+                    // Try to open file in new tab
+                    const newTab = window.open(filePath, '_blank');
+                    
+                    // Check if popup was blocked
+                    if (newTab === null || typeof(newTab) === 'undefined') {
+                        // Popup blocked, try alternative method
+                        const link = document.createElement('a');
+                        link.href = filePath;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // Show message about popup blocker
+                        alert(`Popup may be blocked. File path: ${filePath}\n\nPlease allow popups or use "Copy Path" button to copy the path manually.`);
+                    } else {
+                        // Visual feedback for successful open
+                        openFileBtn.textContent = '✅ Opened!';
+                        setTimeout(() => {
+                            openFileBtn.textContent = '📁 Open File';
+                        }, 1000);
+                    }
+                } else {
+                    alert('Repository path not available. Please create a session first.');
+                }
+            });
+
+            // Copy path handler
+            copyPathBtn.addEventListener('click', async function() {
+                const repoPath = content.querySelector('.repoPath').textContent;
+                if (repoPath && repoPath !== 'Not set') {
+                    // Build file path: repository + index.html
+                    let filePath;
+                    if (repoPath.startsWith('http://') || repoPath.startsWith('https://')) {
+                        // If it's already a URL, append index.html
+                        filePath = repoPath.endsWith('/') ? repoPath + 'index.html' : repoPath + '/index.html';
+                    } else {
+                        // If it's a local path, convert to file:// URL
+                        const cleanPath = repoPath.replace(/\\/g, '/');
+                        filePath = cleanPath.endsWith('/') ? 'file://' + cleanPath + 'index.html' : 'file://' + cleanPath + '/index.html';
+                    }
+                    
+                    console.log('Copying file path to clipboard:', filePath);
+                    
+                    try {
+                        // Try to copy to clipboard
+                        await navigator.clipboard.writeText(filePath);
+                        
+                        // Visual feedback
+                        copyPathBtn.textContent = '✅ Copied!';
+                        setTimeout(() => {
+                            copyPathBtn.textContent = '📋 Copy Path';
+                        }, 1000);
+                    } catch (err) {
+                        // Fallback for older browsers
+                        console.log('Clipboard API not available, using fallback');
+                        
+                        // Create temporary textarea
+                        const textarea = document.createElement('textarea');
+                        textarea.value = filePath;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        
+                        try {
+                            document.execCommand('copy');
+                            copyPathBtn.textContent = '✅ Copied!';
+                            setTimeout(() => {
+                                copyPathBtn.textContent = '📋 Copy Path';
+                            }, 1000);
+                        } catch (fallbackErr) {
+                            alert(`Could not copy automatically. Please copy this path manually:\n\n${filePath}`);
+                        }
+                        
+                        document.body.removeChild(textarea);
+                    }
+                } else {
+                    alert('Repository path not available. Please create a session first.');
+                }
+            });
+
+            // Check server status handler
+            checkServerBtn.addEventListener('click', async function() {
+                checkServerBtn.disabled = true;
+                checkServerBtn.textContent = '🔄 Checking...';
+                
+                try {
+                    const startTime = Date.now();
+                    const response = await fetch(`${API_BASE_URL}/health`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    const endTime = Date.now();
+                    const responseTime = endTime - startTime;
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        addMessage(tabId, 'system', `✅ Server is healthy! Response time: ${responseTime}ms`, {});
+                        
+                        // Show server info if available
+                        if (data) {
+                            addMessage(tabId, 'system', `🔍 Server Info: ${JSON.stringify(data)}`, {});
+                        }
+                    } else {
+                        addMessage(tabId, 'error', `❌ Server responded with error: ${response.status} ${response.statusText}`, {});
+                    }
+                } catch (error) {
+                    addMessage(tabId, 'error', `❌ Server unreachable: ${error.message}`, {});
+                    addMessage(tabId, 'system', `💡 Make sure API server is running at: ${API_BASE_URL}`, {});
+                } finally {
+                    checkServerBtn.disabled = false;
+                    checkServerBtn.textContent = '🔍 Check Server';
+                }
+            });
+
+            // Create session handler
+            createSessionBtn.addEventListener('click', async () => {
+                const model = content.querySelector('.model').value;
+                const files = content.querySelector('.files').value.split('\n').filter(f => f.trim());
+
+                try {
+                    createSessionBtn.disabled = true;
+                    
+                    // Use enhanced session creation with retry
+                    const success = await createSessionWithRetry(tabId, model, files);
+                    
+                    if (!success) {
+                        addMessage(tabId, 'error', '❌ All session creation attempts failed. Please check the API server and try again.', {});
+                    }
+                } catch (error) {
+                    console.error('Unexpected error in session creation:', error);
+                    addMessage(tabId, 'error', `❌ Unexpected Error: ${error.message}`, {});
+                } finally {
+                    createSessionBtn.disabled = false;
+                    createSessionBtn.textContent = '🎯 Create New Session';
+                }
+            });
+
+            // Get files handler
+            getFilesBtn.addEventListener('click', async () => {
+                if (!session.sessionId) {
+                    alert('Please create a session first');
+                    return;
+                }
+
+                try {
+                    getFilesBtn.disabled = true;
+                    getFilesBtn.textContent = '🔄 Getting Files...';
+
+                    const response = await fetch(`${API_BASE_URL}/sessions/${session.sessionId}/files`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        addMessage(tabId, 'system', `📁 Session Files Retrieved (${data.files.length} files)`, {});
+                        
+                        const filesList = data.files.map(file => `• ${file}`).join('\n');
+                        addMessage(tabId, 'system', 'Files in session:', {}, filesList);
+                        
+                        content.querySelector('.currentFiles').textContent = data.files.join(', ');
+                    } else {
+                        addMessage(tabId, 'error', `❌ Failed to get files: ${data.message}`, {});
+                    }
+                } catch (error) {
+                    addMessage(tabId, 'error', `❌ Error getting files: ${error.message}`, {});
+                } finally {
                     getFilesBtn.disabled = false;
-                    addMessage('system', '✅ Session created successfully!', data);
-                } else {
-                    addMessage('error', `❌ Failed to create session: ${data.message}`, data);
+                    getFilesBtn.textContent = '📁 Get Session Files';
                 }
-            } catch (error) {
-                addMessage('error', `❌ Error creating session: ${error.message}`, {});
-            } finally {
-                createSessionBtn.disabled = false;
-                createSessionBtn.textContent = '🎯 Create New Session';
-            }
-        });
+            });
 
-        // Get session files
-        getFilesBtn.addEventListener('click', async () => {
-            if (!currentSessionId) {
-                alert('Please create a session first');
-                return;
-            }
+            // Send message handler
+            sendMessageBtn.addEventListener('click', async () => {
+                const message = content.querySelector('.message').value.trim();
+                const files = content.querySelector('.files').value.split('\n').filter(f => f.trim());
 
-            try {
-                getFilesBtn.disabled = true;
-                getFilesBtn.textContent = '🔄 Getting Files...';
+                if (!message) {
+                    alert('Please enter a message');
+                    return;
+                }
 
-                const response = await fetch(`${API_BASE_URL}/sessions/${currentSessionId}/files`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
+                if (!session.sessionId) {
+                    alert('Please create a session first');
+                    return;
+                }
+
+                try {
+                    // Reset stats
+                    session.eventCounts = { total: 0, ai_output: 0, code_chunk: 0, file_write: 0, execution_step: 0 };
+                    session.streamStats = { events: 0, files: 0, characters: 0 };
+                    // Reset message grouping
+                    session.lastMessageType = null;
+                    session.lastMessageElement = null;
+                    session.messageCounter = 0;
+                    updateStats(tabId);
+                    content.querySelector('.stats-grid').style.display = 'grid';
+
+                    sendMessageBtn.disabled = true;
+                    stopStreamBtn.disabled = false;
+                    sendMessageBtn.textContent = '🔄 Generating Code...';
+
+                    addMessage(tabId, 'user', message, { files: files });
+
+                    session.controller = new AbortController();
+
+                    const response = await fetch(`${API_BASE_URL}/chat`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            session_id: session.sessionId,
+                            message: message,
+                            files: files,
+                            stream: true
+                        }),
+                        signal: session.controller.signal
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                });
 
-                const data = await response.json();
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
 
-                if (response.ok) {
-                    addMessage('system', `📁 Session Files Retrieved (${data.files.length} files)`, data);
-                    
-                    // Display files in a formatted way
-                    const filesList = data.files.map(file => `• ${file}`).join('\n');
-                    addMessage('system', 'Files in session:', data, filesList);
-                    
-                    // Update current files display
-                    currentFilesSpan.textContent = data.files.join(', ');
-                } else {
-                    addMessage('error', `❌ Failed to get files: ${data.message}`, data);
-                }
-            } catch (error) {
-                addMessage('error', `❌ Error getting files: ${error.message}`, {});
-            } finally {
-                getFilesBtn.disabled = false;
-                getFilesBtn.textContent = '📁 Get Session Files';
-            }
-        });
+                    while (true) {
+                        const { done, value } = await reader.read();
 
-        // Send message with streaming
-        sendMessageBtn.addEventListener('click', async () => {
-            const message = document.getElementById('message').value.trim();
-            const files = document.getElementById('files').value.split('\n').filter(f => f.trim());
+                        if (done) break;
 
-            if (!message) {
-                alert('Please enter a message');
-                return;
-            }
+                        buffer += decoder.decode(value, { stream: true });
 
-            if (!currentSessionId) {
-                alert('Please create a session first');
-                return;
-            }
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop() || '';
 
-            try {
-                // Reset stats
-                eventCounts = { total: 0, ai_output: 0, code_chunk: 0, file_write: 0, execution_step: 0 };
-                streamStats = { events: 0, files: 0, characters: 0 };
-                updateStats();
-                statsGrid.style.display = 'grid';
+                        let eventType = '';
+                        let eventData = '';
 
-                // Disable send button, enable stop button
-                sendMessageBtn.disabled = true;
-                stopStreamBtn.disabled = false;
-                sendMessageBtn.textContent = '🔄 Generating Code...';
+                        for (const line of lines) {
+                            if (line.startsWith('event: ')) {
+                                eventType = line.substring(7);
+                            } else if (line.startsWith('data: ')) {
+                                eventData = line.substring(6);
+                            } else if (line === '' && eventType && eventData) {
+                                try {
+                                    const data = JSON.parse(eventData);
+                                    console.log(`🌊 Session ${tabId} - Received event: ${eventType}`, data);
+                                    handleStreamEvent(tabId, eventType, data);
 
-                // Add user message
-                addMessage('user', message, { files: files });
+                                    session.eventCounts.total++;
+                                    session.eventCounts[eventType] = (session.eventCounts[eventType] || 0) + 1;
+                                    session.streamStats.events++;
+                                    updateStats(tabId);
 
-                // Create AbortController for stopping stream
-                currentController = new AbortController();
+                                } catch (e) {
+                                    console.error('Error parsing SSE data:', e, eventData);
+                                }
 
-                // Start streaming
-                const response = await fetch(`${API_BASE_URL}/chat`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        session_id: currentSessionId,
-                        message: message,
-                        files: files,
-                        stream: true
-                    }),
-                    signal: currentController.signal
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                // Process streaming response
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = '';
-
-                while (true) {
-                    const { done, value } = await reader.read();
-
-                    if (done) break;
-
-                    buffer += decoder.decode(value, { stream: true });
-
-                    // Process complete SSE events
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-                    let eventType = '';
-                    let eventData = '';
-
-                    for (const line of lines) {
-                        if (line.startsWith('event: ')) {
-                            eventType = line.substring(7);
-                        } else if (line.startsWith('data: ')) {
-                            eventData = line.substring(6);
-                        } else if (line === '' && eventType && eventData) {
-                            // Process complete event
-                            try {
-                                const data = JSON.parse(eventData);
-                                console.log(`🌊 Received event: ${eventType}`, data);
-                                handleStreamEvent(eventType, data);
-
-                                // Update stats
-                                eventCounts.total++;
-                                eventCounts[eventType] = (eventCounts[eventType] || 0) + 1;
-                                streamStats.events++;
-                                updateStats();
-
-                            } catch (e) {
-                                console.error('Error parsing SSE data:', e, eventData);
-                                console.log('Raw eventData:', eventData);
+                                eventType = '';
+                                eventData = '';
                             }
-
-                            // Reset for next event
-                            eventType = '';
-                            eventData = '';
                         }
                     }
-                }
 
-            } catch (error) {
-                if (error.name === 'AbortError') {
-                    addMessage('system', '⏹️ Stream stopped by user', {});
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        addMessage(tabId, 'system', '⏹️ Stream stopped by user', {});
+                    } else {
+                        addMessage(tabId, 'error', `❌ Error: ${error.message}`, {});
+                    }
+                } finally {
+                    sendMessageBtn.disabled = false;
+                    stopStreamBtn.disabled = true;
+                    sendMessageBtn.textContent = '🚀 Send Message (Streaming)';
+                    session.controller = null;
+                }
+            });
+
+            // Stop stream handler
+            stopStreamBtn.addEventListener('click', () => {
+                if (session.controller) {
+                    session.controller.abort();
+                }
+            });
+
+            // Set initial model
+            content.querySelector('.currentModel').textContent = modelSelect.value;
+        }
+
+        function switchToSession(tabId) {
+            // Remove active class from all tabs
+            document.querySelectorAll('.session-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.session-content').forEach(content => content.classList.remove('active'));
+
+            // Add active class to current tab
+            document.getElementById(`tab_${tabId}`).classList.add('active');
+            document.getElementById(`content_${tabId}`).classList.add('active');
+
+            currentSessionTabId = tabId;
+        }
+
+        function closeSession(tabId) {
+            const session = sessions.get(tabId);
+            if (session && session.controller) {
+                session.controller.abort();
+            }
+
+            // Remove DOM elements
+            document.getElementById(`tab_${tabId}`).remove();
+            document.getElementById(`content_${tabId}`).remove();
+            sessions.delete(tabId);
+
+            // Switch to another session if this was active
+            if (currentSessionTabId === tabId) {
+                const remainingSessions = Array.from(sessions.keys());
+                if (remainingSessions.length > 0) {
+                    switchToSession(remainingSessions[0]);
                 } else {
-                    addMessage('error', `❌ Error: ${error.message}`, {});
+                    currentSessionTabId = null;
                 }
-            } finally {
-                // Reset buttons
-                sendMessageBtn.disabled = false;
-                stopStreamBtn.disabled = true;
-                sendMessageBtn.textContent = '🚀 Send Message (Streaming)';
-                currentController = null;
-            }
-        });
-
-        // Stop streaming
-        stopStreamBtn.addEventListener('click', () => {
-            if (currentController) {
-                currentController.abort();
-            }
-        });
-
-        // Handle different stream events
-        function handleStreamEvent(eventType, data) {
-            const timestamp = new Date().toLocaleTimeString();
-            console.log(`🎯 Handling event: ${eventType}`, data);
-
-            switch (eventType) {
-                case 'start':
-                    addMessage('system', '🚀 Starting code generation...', data);
-                    break;
-
-                case 'ai_thinking':
-                    addMessage('ai-thinking', `🤔 ${data.message}`, data);
-                    break;
-
-                case 'execution_step':
-                    const statusIcon = data.status === 'running' ? '🔄' :
-                        data.status === 'complete' ? '✅' : '❌';
-                    addMessage('execution-step', `${statusIcon} ${data.message}`, data);
-                    break;
-
-                case 'code_gen_start':
-                    addMessage('code-generation', `🎯 Starting code generation for ${data.filename}`, data);
-                    break;
-
-                case 'code_chunk':
-                    addMessage('code-generation', `📝 Code chunk for ${data.filename}`, data, data.chunk);
-                    break;
-
-                case 'code_gen_complete':
-                    addMessage('code-generation', `✅ Completed ${data.filename} (${data.total_lines} lines)`, data);
-                    break;
-
-                case 'file_analysis':
-                    addMessage('file-analysis', `📊 ${data.filename}: ${data.lines} lines, ${data.characters} characters`, data);
-                    break;
-
-                case 'code_preview':
-                    addMessage('file-analysis', `👀 Preview of ${data.filename}`, data, data.preview);
-                    break;
-
-                case 'file_write':
-                    const writeIcon = data.success ? '✅' : '❌';
-                    addMessage('system', `${writeIcon} ${data.success ? 'Wrote' : 'Failed to write'} ${data.filename} (${data.content_length} chars)`, data);
-                    if (data.success) {
-                        streamStats.files++;
-                        streamStats.characters += data.content_length;
-                    }
-                    break;
-
-                case 'file_mod_start':
-                    addMessage('system', `🔧 Starting ${data.action} for ${data.filename}`, data);
-                    break;
-
-                case 'file_mod_step':
-                    addMessage('system', `⚙️ ${data.filename}: ${data.step}`, data);
-                    break;
-
-                case 'file_mod_complete':
-                    const modIcon = data.success ? '✅' : '❌';
-                    addMessage('system', `${modIcon} ${data.filename}: ${data.details}`, data);
-                    break;
-
-                case 'ai_response_start':
-                    addMessage('ai-thinking', '🤖 AI is starting to generate response...', data);
-                    // Create placeholder for streaming AI response
-                    aiResponseBuffer = '';
-                    aiResponseElement = addMessage('streaming', '🤖 AI Response (Waiting for chunks...)', data, '', true);
-                    break;
-
-                case 'ai_response_chunk':
-                    // Accumulate chunk
-                    aiResponseBuffer += data.chunk;
-
-                    // Update the streaming message
-                    if (aiResponseElement) {
-                        const contentDiv = aiResponseElement.querySelector('.message-content');
-                        const codeBlock = aiResponseElement.querySelector('.code-block');
-                        if (codeBlock) {
-                            codeBlock.textContent = aiResponseBuffer;
-                        } else {
-                            contentDiv.innerHTML = `
-                                🤖 AI Response (Streaming... ${aiResponseBuffer.length} chars)
-                                <div class="code-block">${escapeHtml(aiResponseBuffer)}</div>
-                            `;
-                        }
-                    }
-
-                    // Also add individual chunk messages for detailed tracking
-                    addMessage('system', `📝 AI Chunk: ${data.chunk.substring(0, 50)}${data.chunk.length > 50 ? '...' : ''}`, data);
-                    break;
-
-                case 'ai_chunk_debug':
-                    // Show raw chunks for debugging - with special styling
-                    addMessage('chunk-debug', `🔍 Raw Chunk #${data.chunk_count}: "${data.chunk}"`, data);
-
-                    // Also update cumulative AI response if we're in streaming mode
-                    if (aiResponseElement) {
-                        const chunkPreview = data.chunk.length > 20 ? data.chunk.substring(0, 20) + '...' : data.chunk;
-                        const contentDiv = aiResponseElement.querySelector('.message-content');
-                        contentDiv.innerHTML = `
-                            🤖 AI Response (Streaming... chunk #${data.chunk_count})
-                            <div class="file-preview">Latest chunk: ${escapeHtml(chunkPreview)}</div>
-                        `;
-                    }
-                    break;
-
-                case 'ai_response_complete':
-                    addMessage('ai-thinking', `✅ AI response generation completed (${aiResponseBuffer.length} chars)`, data);
-
-                    // Update final message
-                    if (aiResponseElement) {
-                        // Remove streaming class to stop animation
-                        aiResponseElement.className = aiResponseElement.className.replace('streaming', 'assistant');
-
-                        const contentDiv = aiResponseElement.querySelector('.message-content');
-                        contentDiv.innerHTML = `
-                            🤖 AI Response (Complete - ${aiResponseBuffer.length} chars)
-                            <div class="code-block">${escapeHtml(aiResponseBuffer)}</div>
-                        `;
-                    }
-
-                    // Reset buffer
-                    aiResponseBuffer = '';
-                    aiResponseElement = null;
-                    break;
-
-                case 'ai_output':
-                    if (data.is_chunk) {
-                        addMessage('assistant', `🤖 AI Output (chunk ${data.chunk_index + 1}/${data.total_chunks})`, data, data.message);
-                    } else {
-                        addMessage('assistant', '🤖 AI Output', data, data.message);
-                    }
-                    break;
-
-                case 'tool_output':
-                    addMessage('system', `🔧 Tool: ${data.message}`, data);
-                    break;
-
-                case 'tool_error':
-                    addMessage('error', `❌ Tool Error: ${data.message}`, data);
-                    break;
-
-                case 'tool_warning':
-                    addMessage('system', `⚠️ Tool Warning: ${data.message}`, data);
-                    break;
-
-                case 'file_summary':
-                    addMessage('system', `📄 Generated ${data.filename} with ${data.content_length} characters`, data);
-                    break;
-
-                case 'completion_stats':
-                    addMessage('system', `📊 Completion Stats: ${data.files_modified} files, ${data.events_streamed} events, ${data.total_characters} characters`, data);
-                    streamStats.files = data.files_modified;
-                    streamStats.characters = data.total_characters;
-                    break;
-
-                case 'response':
-                    if (data.type === 'file_content') {
-                        addMessage('assistant', `✅ Generated ${data.filename}`, data, data.message);
-                    } else {
-                        addMessage('assistant', '🤖 Response', data, data.message);
-                    }
-                    break;
-
-                case 'complete':
-                    addMessage('system', '🎉 Code generation completed!', data);
-                    break;
-
-                case 'error':
-                    addMessage('error', `❌ Error: ${data.message}`, data);
-                    break;
-
-                case 'heartbeat':
-                    // Don't show heartbeat messages, just update stats
-                    break;
-
-                default:
-                    addMessage('system', `📡 ${eventType}: ${data.message || JSON.stringify(data)}`, data);
             }
         }
 
-        // Add message to UI
-        function addMessage(type, content, data, codeContent = null, returnElement = false) {
+        function updateSessionInfo(tabId, data) {
+            const content = document.getElementById(`content_${tabId}`);
+            content.querySelector('.sessionId').textContent = data.session_id;
+            content.querySelector('.repoPath').textContent = data.repo_path;
+            content.querySelector('.currentModel').textContent = data.model;
+            content.querySelector('.currentFiles').textContent = data.files ? data.files.join(', ') : 'None';
+        }
+
+        function updateStats(tabId) {
+            const session = sessions.get(tabId);
+            const content = document.getElementById(`content_${tabId}`);
+            
+            content.querySelector('.eventsCount').textContent = session.streamStats.events;
+            content.querySelector('.filesModified').textContent = session.streamStats.files;
+            content.querySelector('.totalChars').textContent = session.streamStats.characters.toLocaleString();
+        }
+
+        function addMessage(tabId, type, content, data, codeContent = null, returnElement = false) {
+            const session = sessions.get(tabId);
+            const messagesDiv = document.getElementById(`content_${tabId}`).querySelector('.messages');
+            
+            // Types that should not be grouped (important messages)
+            const nonGroupableTypes = ['user', 'error', 'complete', 'streaming'];
+            
+            // Check if this is the same type as the last message and can be grouped
+            if (session.lastMessageType === type && 
+                session.lastMessageElement && 
+                !codeContent && 
+                !nonGroupableTypes.includes(type)) {
+                
+                // Increment counter and update existing message
+                session.messageCounter++;
+                
+                const messageHeader = session.lastMessageElement.querySelector('.message-header');
+                const messageTypeSpan = messageHeader.querySelector('.message-type');
+                const timestamp = new Date().toLocaleTimeString();
+                
+                // Update the message type with counter
+                messageTypeSpan.textContent = `${type.replace('-', ' ')} (×${session.messageCounter})`;
+                
+                // Update timestamp
+                const timestampSpan = messageHeader.querySelector('.message-timestamp');
+                timestampSpan.textContent = timestamp;
+                
+                // Scroll to bottom
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                
+                if (returnElement) {
+                    return session.lastMessageElement;
+                }
+                return;
+            }
+            
+            // Create new message
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${type}`;
 
@@ -877,42 +1144,157 @@
             }
 
             messageDiv.innerHTML = `
-                 <div class="message-header">
-                     ${statusIndicator}
-                     <span class="message-type">${type.replace('-', ' ')}</span>
-                     <span class="message-timestamp">${timestamp}</span>
-                 </div>
-                 <div class="message-content">
-                     ${content}
-                     ${codeContent ? `<div class="code-block">${escapeHtml(codeContent)}</div>` : ''}
-                 </div>
-             `;
+                <div class="message-header">
+                    ${statusIndicator}
+                    <span class="message-type">${type.replace('-', ' ')}</span>
+                    <span class="message-timestamp">${timestamp}</span>
+                </div>
+                <div class="message-content">
+                    ${content}
+                    ${codeContent ? `<div class="code-block">${escapeHtml(codeContent)}</div>` : ''}
+                </div>
+            `;
 
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-            // Return element reference if requested
+            // Update session tracking
+            session.lastMessageType = type;
+            session.lastMessageElement = messageDiv;
+            session.messageCounter = 1;
+
             if (returnElement) {
                 return messageDiv;
             }
         }
 
-        // Update session info
-        function updateSessionInfo(data) {
-            sessionIdSpan.textContent = data.session_id;
-            repoPathSpan.textContent = data.repo_path;
-            currentModelSpan.textContent = data.model;
-            currentFilesSpan.textContent = data.files ? data.files.join(', ') : 'None';
+        // Add session button handler
+        addSessionBtn.addEventListener('click', createNewSessionTab);
+
+        // Get session files
+        // Update handleStreamEvent to work with tabId
+        function handleStreamEvent(tabId, eventType, data) {
+            const session = sessions.get(tabId);
+            const timestamp = new Date().toLocaleTimeString();
+            console.log(`🎯 Handling event: ${eventType}`, data);
+
+            switch (eventType) {
+                case 'start':
+                    addMessage(tabId, 'system', '🚀 Starting code generation', {});
+                    break;
+
+                case 'ai_thinking':
+                    addMessage(tabId, 'ai-thinking', '🤔 AI Thinking', {});
+                    break;
+
+                case 'execution_step':
+                    addMessage(tabId, 'execution-step', '⚙️ Execution Step', {});
+                    break;
+
+                case 'code_gen_start':
+                    addMessage(tabId, 'code-generation', '🎯 Code Generation Started', {});
+                    break;
+
+                case 'code_chunk':
+                    // Skip individual chunks - too verbose
+                    break;
+
+                case 'code_gen_complete':
+                    addMessage(tabId, 'code-generation', '✅ Code Generation Complete', {});
+                    break;
+
+                case 'file_analysis':
+                    addMessage(tabId, 'file-analysis', '📊 File Analysis', {});
+                    break;
+
+                case 'code_preview':
+                    // Skip preview - too verbose
+                    break;
+
+                case 'file_write':
+                    addMessage(tabId, 'system', '💾 File Write', {});
+                    if (data.success) {
+                        session.streamStats.files++;
+                        session.streamStats.characters += data.content_length || 0;
+                    }
+                    break;
+
+                case 'file_mod_start':
+                    addMessage(tabId, 'system', '🔧 File Modification Started', {});
+                    break;
+
+                case 'file_mod_step':
+                    // Skip individual steps - too verbose
+                    break;
+
+                case 'file_mod_complete':
+                    addMessage(tabId, 'system', '✅ File Modification Complete', {});
+                    break;
+
+                case 'ai_response_start':
+                    addMessage(tabId, 'ai-thinking', '🤖 AI Response Started', {});
+                    break;
+
+                case 'ai_response_chunk':
+                    // Skip chunks - too verbose
+                    break;
+
+                case 'ai_chunk_debug':
+                    // Skip debug chunks - too verbose
+                    break;
+
+                case 'ai_response_complete':
+                    addMessage(tabId, 'ai-thinking', '✅ AI Response Complete', {});
+                    break;
+
+                case 'ai_output':
+                    addMessage(tabId, 'assistant', '🤖 AI Output', {});
+                    break;
+
+                case 'tool_output':
+                    addMessage(tabId, 'system', '🔧 Tool Output', {});
+                    break;
+
+                case 'tool_error':
+                    addMessage(tabId, 'error', '❌ Tool Error', {});
+                    break;
+
+                case 'tool_warning':
+                    addMessage(tabId, 'system', '⚠️ Tool Warning', {});
+                    break;
+
+                case 'file_summary':
+                    addMessage(tabId, 'system', '📄 File Summary', {});
+                    break;
+
+                case 'completion_stats':
+                    addMessage(tabId, 'system', '📊 Completion Stats', {});
+                    session.streamStats.files = data.files_modified || 0;
+                    session.streamStats.characters = data.total_characters || 0;
+                    break;
+
+                case 'response':
+                    addMessage(tabId, 'assistant', '🤖 Response', {});
+                    break;
+
+                case 'complete':
+                    addMessage(tabId, 'system', '🎉 Code generation completed!', {});
+                    break;
+
+                case 'error':
+                    addMessage(tabId, 'error', '❌ Error', {});
+                    break;
+
+                case 'heartbeat':
+                    // Don't show heartbeat messages, just update stats
+                    break;
+
+                default:
+                    addMessage(tabId, 'system', `📡 ${eventType}`, {});
+            }
         }
 
-        // Update statistics
-        function updateStats() {
-            eventsCountSpan.textContent = streamStats.events;
-            filesModifiedSpan.textContent = streamStats.files;
-            totalCharsSpan.textContent = streamStats.characters.toLocaleString();
-        }
-
-        // Escape HTML
+        // Utility functions
         function escapeHtml(text) {
             const map = {
                 '&': '&amp;',
@@ -929,32 +1311,128 @@
             try {
                 const response = await fetch(`${API_BASE_URL}/health`);
                 if (response.ok) {
-                    document.getElementById('apiServer').style.color = '#28a745';
-                    addMessage('system', `✅ Connected to API server at ${API_BASE_URL}`, {});
+                    console.log(`✅ Connected to API server at ${API_BASE_URL}`);
+                    return true;
                 } else {
-                    document.getElementById('apiServer').style.color = '#dc3545';
-                    addMessage('error', `❌ API server responded with status ${response.status}`, {});
+                    console.log(`❌ API server responded with status ${response.status}`);
+                    return false;
                 }
             } catch (error) {
-                document.getElementById('apiServer').style.color = '#dc3545';
-                addMessage('error', `❌ Cannot connect to API server at ${API_BASE_URL}: ${error.message}`, {});
+                console.log(`❌ Cannot connect to API server at ${API_BASE_URL}: ${error.message}`);
+                return false;
             }
         }
 
-        // Set default model on page load
+        // Enhanced session creation with retry
+        async function createSessionWithRetry(tabId, model, files, maxRetries = 2) {
+            const session = sessions.get(tabId);
+            const content = document.getElementById(`content_${tabId}`);
+            const createSessionBtn = content.querySelector('.createSession');
+            
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    createSessionBtn.textContent = `🔄 Creating Session... (${attempt}/${maxRetries})`;
+                    
+                    // Test API connection first
+                    if (attempt === 1) {
+                        const isConnected = await testApiConnection();
+                        if (!isConnected) {
+                            addMessage(tabId, 'error', '❌ API server is not accessible. Please check server status.', {});
+                            return false;
+                        }
+                    }
+
+                    const requestBody = {
+                        model: model,
+                        files: files
+                    };
+
+                    console.log(`Creating session (attempt ${attempt}/${maxRetries}) with request:`, requestBody);
+
+                    const response = await fetch(`${API_BASE_URL}/sessions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    console.log(`Session creation response status (attempt ${attempt}):`, response.status);
+
+                    const data = await response.json();
+                    console.log(`Session creation response data (attempt ${attempt}):`, data);
+
+                    if (response.ok) {
+                        session.sessionId = data.session_id;
+                        updateSessionInfo(tabId, data);
+                        
+                        // Enable buttons
+                        const sendMessageBtn = content.querySelector('.sendMessage');
+                        const getFilesBtn = content.querySelector('.getFiles');
+                        const openFileBtn = content.querySelector('.openFile');
+                        const copyPathBtn = content.querySelector('.copyPath');
+                        
+                        sendMessageBtn.disabled = false;
+                        getFilesBtn.disabled = false;
+                        openFileBtn.disabled = false;
+                        copyPathBtn.disabled = false;
+                        
+                        addMessage(tabId, 'system', '✅ Session created successfully!', {});
+                        return true;
+                    } else {
+                        // Enhanced error handling with more details
+                        const errorMessage = data.message || data.error || 'Unknown error';
+                        const errorDetails = data.details || data.stack || 'No additional details';
+                        
+                        console.error(`Session creation failed (attempt ${attempt}):`, {
+                            status: response.status,
+                            statusText: response.statusText,
+                            message: errorMessage,
+                            details: errorDetails,
+                            fullResponse: data
+                        });
+
+                        // Only show error messages on last attempt
+                        if (attempt === maxRetries) {
+                            addMessage(tabId, 'error', `❌ Failed to create session: ${errorMessage}`, {});
+                            
+                            // Show detailed error for debugging
+                            if (errorDetails !== 'No additional details') {
+                                addMessage(tabId, 'error', `🔍 Debug Info: ${errorDetails}`, {});
+                            }
+
+                            // Suggest potential solutions
+                            if (errorMessage.includes('original_cwd')) {
+                                addMessage(tabId, 'system', '💡 Potential Solution: This error may be related to the server\'s working directory. Try restarting the API server or check server logs.', {});
+                            }
+                        } else {
+                            addMessage(tabId, 'system', `⚠️ Attempt ${attempt} failed, retrying...`, {});
+                            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Network error creating session (attempt ${attempt}):`, error);
+                    
+                    if (attempt === maxRetries) {
+                        addMessage(tabId, 'error', `❌ Network Error: ${error.message}`, {});
+                        addMessage(tabId, 'system', '💡 Check if API server is running and accessible at: ' + API_BASE_URL, {});
+                    } else {
+                        addMessage(tabId, 'system', `⚠️ Network error on attempt ${attempt}, retrying...`, {});
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        // Initialize page
         document.addEventListener('DOMContentLoaded', function () {
-            const modelSelect = document.getElementById('model');
-            currentModelSpan.textContent = modelSelect.value;
-
-            // Set API server in session info
-            document.getElementById('apiServer').textContent = API_BASE_URL;
-
             // Test API connection
             testApiConnection();
 
-            modelSelect.addEventListener('change', function () {
-                currentModelSpan.textContent = this.value;
-            });
+            // Create first session by default
+            createNewSessionTab();
         });
     </script>
 </body>

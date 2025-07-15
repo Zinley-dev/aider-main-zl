@@ -15,7 +15,12 @@ from api_util import (
     handle_file_extraction,
     get_edited_files,
     create_temp_repo,
-    get_session_manager
+    get_session_manager,
+    create_enhanced_coder_with_dynamic_reminder,
+    apply_dynamic_system_reminder,
+    detect_request_type,
+    detect_urgency,
+    estimate_complexity
 )
 from api_io import StreamingApiInputOutput
 from config import settings
@@ -34,15 +39,17 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
         # Emit start event
         yield f"event: start\ndata: {json.dumps({'message': 'Starting chat...'})}\n\n"
         
-        # Tạo session với streaming IO
-        session, session_id = get_or_create_session(
+        # Tạo session với dynamic system reminder
+        session, session_id = create_enhanced_coder_with_dynamic_reminder(
             session_id=request.session_id, 
             repo_path=request.repo_path,
             model=request.model,
             files=request.files,
             read_only_files=request.read_only_files,
             edit_format=request.edit_format,
-            use_streaming=True
+            use_streaming=True,
+            request_message=request.message,
+            session_context={'user_preferences': {}}
         )
         
         coder = session["coder"]
@@ -91,12 +98,25 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
         print(f"🌊 Started streaming with io: {type(streaming_io)}")
         print(f"🌊 Streaming active: {streaming_io.streaming}")
         
-        # Stream initial analysis
-        yield f"event: execution_step\ndata: {json.dumps({'step': 'analyzing_request', 'message': 'Analyzing your request...', 'status': 'running'})}\n\n"
+        # Stream initial analysis with context
+        request_context = {
+            'type': detect_request_type(request.message),
+            'urgency': detect_urgency(request.message),
+            'complexity': estimate_complexity(request.message, request.files or [])
+        }
         
-        # Debug: Check coder state
+        analysis_message = f'Analyzing your request... (Type: {request_context["type"]}, Urgency: {request_context["urgency"]}, Complexity: {request_context["complexity"]})'
+        yield f"event: execution_step\ndata: {json.dumps({'step': 'analyzing_request', 'message': analysis_message, 'status': 'running'})}\n\n"
+        
+        # Stream context information
+        context_message = f'Request classified as {request_context["type"]} with {request_context["urgency"]} urgency and {request_context["complexity"]} complexity'
+        yield f"event: context_analysis\ndata: {json.dumps({'context': request_context, 'message': context_message, 'status': 'complete'})}\n\n"
+        
+        # Debug: Check coder state and dynamic reminder
         print(f"🔍 Coder files: {list(getattr(coder, 'abs_fnames', []))}")
         print(f"🔍 Edited files before: {list(getattr(coder, 'aider_edited_files', []))}")
+        print(f"🔧 Dynamic system reminder length: {len(coder.gpt_prompts.system_reminder)} chars")
+        print(f"🔧 System reminder preview: {coder.gpt_prompts.system_reminder[:200]}...")
         
         # Stream file analysis
         if request.files:
@@ -425,13 +445,16 @@ async def chat_non_stream(request):
     original_cwd = os.getcwd()
     print(f"🔍 Original cwd: {original_cwd}")
     try:
-        session, session_id = get_or_create_session(
+        session, session_id = create_enhanced_coder_with_dynamic_reminder(
             session_id=request.session_id, 
             repo_path=request.repo_path,
             model=request.model,
             files=request.files,
             read_only_files=request.read_only_files,
-            edit_format=request.edit_format
+            edit_format=request.edit_format,
+            use_streaming=False,
+            request_message=request.message,
+            session_context={'user_preferences': {}}
         )
         coder = session["coder"]
         io = session["io"]
@@ -444,6 +467,10 @@ async def chat_non_stream(request):
         
         # Clear buffers trước khi xử lý
         io.clear_buffers()
+        
+        # Debug: Check dynamic system reminder
+        print(f"🔧 Dynamic system reminder length: {len(coder.gpt_prompts.system_reminder)} chars")
+        print(f"🔧 System reminder preview: {coder.gpt_prompts.system_reminder[:200]}...")
         
         # Lấy thông tin về file ảnh
         image_files_info = get_image_files_info(coder)
@@ -574,13 +601,15 @@ async def create_session_controller(session_request):
         if not repo_path:
             repo_path = create_temp_repo(files)
         
-        _, session_id = get_or_create_session(
+        _, session_id = create_enhanced_coder_with_dynamic_reminder(
             repo_path=repo_path,
             model=session_request.model,
             files=files,
             read_only_files=session_request.read_only_files,
             edit_format=session_request.edit_format,
-            auto_commits=session_request.auto_commits
+            auto_commits=session_request.auto_commits,
+            request_message="Session initialization",
+            session_context={'user_preferences': {}}
         )
         return {
             "session_id": session_id,
