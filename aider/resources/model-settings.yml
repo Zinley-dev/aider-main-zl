@@ -1718,6 +1718,7 @@
   reminder: sys
   examples_as_sys_msg: true
   editor_edit_format: editor-diff
+  streaming: true
 
 - name: snowx/gpt-4.1
   edit_format: diff

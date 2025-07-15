@@ -152,11 +152,15 @@ class StreamingApiInputOutput(ApiInputOutput):
         super().__init__()
         self.stream_queue = asyncio.Queue()
         self.streaming = False
+        self.current_code_buffer = ""
+        self.current_file = None
     
     def start_streaming(self):
         """Bắt đầu streaming mode"""
         self.streaming = True
         self.clear_buffers()
+        self.current_code_buffer = ""
+        self.current_file = None
     
     def stop_streaming(self):
         """Dừng streaming mode"""
@@ -172,123 +176,289 @@ class StreamingApiInputOutput(ApiInputOutput):
             }
             await self.stream_queue.put(event)
     
+    def emit_event_sync(self, event_type: str, data: dict):
+        """Emit event synchronously - helper method"""
+        if self.streaming:
+            print(f"🌊 Emitting event: {event_type} - {str(data)[:100]}...")
+            # Always put directly into queue to avoid RuntimeWarning
+            event = {
+                "type": event_type,
+                "data": data,
+                "timestamp": time.time()
+            }
+            self.stream_queue.put_nowait(event)
+            print(f"📨 Event queued: {event_type}")
+        else:
+            print(f"⚠️ Not streaming, event {event_type} ignored")
+    
+    # Stream thinking process
+    def stream_thinking(self, msg):
+        """Stream AI thinking process"""
+        self.emit_event_sync("ai_thinking", {"message": str(msg)})
+    
+    # Stream code generation process
+    def stream_code_generation_start(self, filename, language=""):
+        """Stream start of code generation for a file"""
+        self.current_file = filename
+        self.current_code_buffer = ""
+        self.emit_event_sync("code_gen_start", {
+            "filename": filename,
+            "language": language,
+            "message": f"Starting code generation for {filename}"
+        })
+    
+    def stream_code_chunk(self, chunk, filename=None):
+        """Stream a chunk of generated code"""
+        if filename:
+            self.current_file = filename
+        
+        self.current_code_buffer += chunk
+        self.emit_event_sync("code_chunk", {
+            "filename": self.current_file or "unknown",
+            "chunk": chunk,
+            "total_length": len(self.current_code_buffer),
+            "message": f"Code chunk: {chunk[:50]}{'...' if len(chunk) > 50 else ''}"
+        })
+    
+    def stream_code_generation_complete(self, filename=None, total_lines=0):
+        """Stream completion of code generation"""
+        if filename:
+            self.current_file = filename
+            
+        self.emit_event_sync("code_gen_complete", {
+            "filename": self.current_file or "unknown",
+            "total_length": len(self.current_code_buffer),
+            "total_lines": total_lines,
+            "message": f"Completed code generation for {self.current_file}"
+        })
+    
+    # Stream file modification process
+    def stream_file_modification_start(self, filename, action="modify"):
+        """Stream start of file modification"""
+        self.emit_event_sync("file_mod_start", {
+            "filename": filename,
+            "action": action,
+            "message": f"Starting {action} for {filename}"
+        })
+    
+    def stream_file_modification_step(self, filename, step, details=""):
+        """Stream individual file modification step"""
+        self.emit_event_sync("file_mod_step", {
+            "filename": filename,
+            "step": step,
+            "details": details,
+            "message": f"{filename}: {step} - {details}"
+        })
+    
+    def stream_file_modification_complete(self, filename, success=True, details=""):
+        """Stream completion of file modification"""
+        self.emit_event_sync("file_mod_complete", {
+            "filename": filename,
+            "success": success,
+            "details": details,
+            "message": f"{'✅' if success else '❌'} {filename}: {details}"
+        })
+    
+    # Stream AI response progressively
+    def stream_ai_response_start(self):
+        """Stream start of AI response"""
+        self.emit_event_sync("ai_response_start", {
+            "message": "AI is generating response..."
+        })
+    
+    def stream_ai_response_chunk(self, chunk):
+        """Stream chunk of AI response"""
+        self.emit_event_sync("ai_response_chunk", {
+            "chunk": chunk,
+            "message": chunk[:100] + ("..." if len(chunk) > 100 else "")
+        })
+    
+    def stream_ai_chunk_debug(self, chunk, chunk_number):
+        """Stream AI chunk with debug info for real-time monitoring"""
+        print(f"🔍 XXX Chunk #{chunk_number}: '{chunk}' (type: {type(chunk)})")
+        
+        # Emit raw chunk event for debugging
+        self.emit_event_sync("ai_chunk_debug", {
+            "chunk": str(chunk),
+            "chunk_number": chunk_number,
+            "chunk_type": str(type(chunk)),
+            "chunk_length": len(str(chunk)),
+            "message": f"Chunk #{chunk_number}: {repr(chunk)}"
+        })
+        print(f"📨 XXX Direct queued chunk event #{chunk_number}")
+        
+        # Also emit regular chunk event
+        self.emit_event_sync("ai_response_chunk", {
+            "chunk": str(chunk),
+            "chunk_number": chunk_number,
+            "message": str(chunk)
+        })
+    
+    def stream_ai_response_complete(self):
+        """Stream completion of AI response"""
+        self.emit_event_sync("ai_response_complete", {
+            "message": "AI response completed"
+        })
+    
+    # Stream execution steps
+    def stream_execution_step(self, step_name, details="", status="running"):
+        """Stream execution step"""
+        self.emit_event_sync("execution_step", {
+            "step": step_name,
+            "details": details,
+            "status": status,
+            "message": f"{step_name}: {details}"
+        })
+    
     def tool_output(self, msg, log_only=False):
         """Override để stream tool output"""
         super().tool_output(msg, log_only)
         if self.streaming and not log_only:
-            # Tạo event cho stream - sử dụng try/except để tránh lỗi event loop
-            try:
-                asyncio.create_task(self.emit_event("tool_output", {
-                    "message": str(msg)
-                }))
-            except RuntimeError:
-                # Không có event loop, thêm vào queue trực tiếp
-                self.stream_queue.put_nowait({
-                    "type": "tool_output",
-                    "data": {"message": str(msg)},
-                    "timestamp": time.time()
-                })
+            self.emit_event_sync("tool_output", {"message": str(msg)})
     
     def tool_error(self, msg):
         """Override để stream tool errors"""
         super().tool_error(msg)
         if self.streaming:
-            try:
-                asyncio.create_task(self.emit_event("tool_error", {
-                    "message": str(msg)
-                }))
-            except RuntimeError:
-                self.stream_queue.put_nowait({
-                    "type": "tool_error",
-                    "data": {"message": str(msg)},
-                    "timestamp": time.time()
-                })
+            self.emit_event_sync("tool_error", {"message": str(msg)})
     
     def tool_warning(self, msg):
         """Override để stream tool warnings"""
         super().tool_warning(msg)
         if self.streaming:
-            try:
-                asyncio.create_task(self.emit_event("tool_warning", {
-                    "message": str(msg)
-                }))
-            except RuntimeError:
-                self.stream_queue.put_nowait({
-                    "type": "tool_warning",
-                    "data": {"message": str(msg)},
-                    "timestamp": time.time()
-                })
+            self.emit_event_sync("tool_warning", {"message": str(msg)})
     
     def ai_output(self, msg, pretty=None):
-        """Override để stream AI output"""
+        """Override để stream AI output với enhanced chunking"""
         super().ai_output(msg)
         if self.streaming:
-            try:
-                asyncio.create_task(self.emit_event("ai_output", {
-                    "message": str(msg)
-                }))
-            except RuntimeError:
-                self.stream_queue.put_nowait({
-                    "type": "ai_output",
-                    "data": {"message": str(msg)},
-                    "timestamp": time.time()
+            # Enhanced chunking with debug info
+            chunk_size = 50  # Smaller chunks for better real-time feel
+            msg_str = str(msg)
+            total_chunks = (len(msg_str) + chunk_size - 1) // chunk_size
+            
+            print(f"🎯 AI output streaming: {len(msg_str)} chars, {total_chunks} chunks")
+            
+            for i in range(0, len(msg_str), chunk_size):
+                chunk = msg_str[i:i + chunk_size]
+                chunk_number = i // chunk_size + 1
+                
+                # Use our new debug method
+                self.stream_ai_chunk_debug(chunk, chunk_number)
+                
+                # Also emit traditional ai_output event
+                self.emit_event_sync("ai_output", {
+                    "message": chunk,
+                    "is_chunk": True,
+                    "chunk_index": chunk_number - 1,
+                    "total_chunks": total_chunks,
+                    "chunk_size": len(chunk)
                 })
-    
+            
+            # Emit summary event
+            self.emit_event_sync("ai_output_complete", {
+                "total_length": len(msg_str),
+                "total_chunks": total_chunks,
+                "message": f"AI output complete: {len(msg_str)} characters"
+            })
+            
+            print(f"🎉 XXX Final result length: {len(msg_str)} characters, total chunks: {total_chunks}")
+
     def assistant_output(self, msg, pretty=None):
         """Override để stream assistant output"""
-        super().assistant_output(msg, pretty)
+        super().assistant_output(msg)
         if self.streaming:
-            try:
-                asyncio.create_task(self.emit_event("assistant_output", {
-                    "message": str(msg)
-                }))
-            except RuntimeError:
-                self.stream_queue.put_nowait({
-                    "type": "assistant_output",
-                    "data": {"message": str(msg)},
-                    "timestamp": time.time()
-                })
+            self.emit_event_sync("assistant_output", {"message": str(msg)})
     
     def write_text(self, filename, content, encoding="utf-8"):
-        """Override để stream file write events"""
-        result = super().write_text(filename, content, encoding)
+        """Override để stream file write events with detailed progress"""
         if self.streaming:
-            try:
-                asyncio.create_task(self.emit_event("file_write", {
+            self.stream_file_modification_start(filename, "write")
+            
+            # Stream content preview
+            preview = content[:200] + ("..." if len(content) > 200 else "")
+            self.stream_file_modification_step(filename, "preparing_content", 
+                                             f"Content length: {len(content)} chars")
+        
+        result = super().write_text(filename, content, encoding)
+        
+        if self.streaming:
+            if result:
+                self.stream_file_modification_step(filename, "writing_file", "Writing to disk...")
+                self.stream_file_modification_complete(filename, True, 
+                                                     f"Successfully written {len(content)} characters")
+                # Also emit the traditional file_write event for backward compatibility
+                self.emit_event_sync("file_write", {
                     "filename": filename,
                     "content_length": len(content),
-                    "success": result
-                }))
-            except RuntimeError:
-                self.stream_queue.put_nowait({
-                    "type": "file_write",
-                    "data": {
-                        "filename": filename,
-                        "content_length": len(content),
-                        "success": result
-                    },
-                    "timestamp": time.time()
+                    "success": result,
+                    "content_preview": content[:200] + ("..." if len(content) > 200 else "")
                 })
+            else:
+                self.stream_file_modification_complete(filename, False, "Failed to write file")
+        
         return result
     
     async def get_stream_events(self) -> AsyncGenerator[dict, None]:
         """Generator để lấy stream events"""
+        event_count = 0
+        print(f"🎬 Starting get_stream_events generator (streaming={self.streaming})")
+        
         while self.streaming:
             try:
-                # Đợi event với timeout
-                event = await asyncio.wait_for(self.stream_queue.get(), timeout=0.1)
-                yield event
-            except asyncio.TimeoutError:
-                # Gửi heartbeat event
-                yield {
-                    "type": "heartbeat",
-                    "data": {"status": "alive"},
-                    "timestamp": time.time()
-                }
+                # Check if there are events in the queue
+                if not self.stream_queue.empty():
+                    event = self.stream_queue.get_nowait()
+                    event_count += 1
+                    print(f"📤 Yielding event #{event_count}: {event.get('type', 'unknown')} - {str(event.get('data', {}))[:50]}...")
+                    yield event
+                else:
+                    # If no events, wait a bit and send heartbeat
+                    await asyncio.sleep(0.1)
+                    if event_count % 50 == 0:  # Send heartbeat every 5 seconds (50 * 0.1s)
+                        heartbeat = {
+                            "type": "heartbeat",
+                            "data": {"status": "alive", "events_sent": event_count, "queue_size": self.stream_queue.qsize()},
+                            "timestamp": time.time()
+                        }
+                        print(f"💓 Heartbeat sent (events so far: {event_count}, queue size: {self.stream_queue.qsize()})")
+                        yield heartbeat
+                    
+            except asyncio.QueueEmpty:
+                # Queue is empty, continue waiting
+                await asyncio.sleep(0.1)
+                continue
             except Exception as e:
-                yield {
+                print(f"❌ Error in get_stream_events: {e}")
+                error_event = {
                     "type": "error",
                     "data": {"message": str(e)},
                     "timestamp": time.time()
                 }
-                break 
+                yield error_event
+                break
+        
+        print(f"🏁 Stream ended, total events sent: {event_count}")
+        
+        # Send final event to indicate stream end
+        final_event = {
+            "type": "stream_end",
+            "data": {"total_events": event_count},
+            "timestamp": time.time()
+        }
+        yield final_event
+
+    def force_flush_events(self):
+        """Force flush all pending events from the queue"""
+        if self.streaming:
+            queue_size = self.stream_queue.qsize()
+            print(f"🔄 Force flushing {queue_size} pending events...")
+            flushed_count = 0
+            while not self.stream_queue.empty():
+                try:
+                    event = self.stream_queue.get_nowait()
+                    flushed_count += 1
+                    print(f"💨 Flushed event #{flushed_count}: {event.get('type', 'unknown')}")
+                except:
+                    break
+            print(f"✅ Flushed {flushed_count} events") 

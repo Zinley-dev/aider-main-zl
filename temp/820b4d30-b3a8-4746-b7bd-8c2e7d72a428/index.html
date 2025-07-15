@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tic Tac Toe</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', 'Comic Sans', cursive, Arial, sans-serif;
+            background: linear-gradient(135deg, #f7f7f7 60%, #ffe066 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        h1 {
+            margin-top: 40px;
+            font-size: 3em;
+            color: #ff5e57;
+            text-shadow: 2px 2px 0 #fff176, 4px 4px 0 #ffb347;
+            animation: bounce 1.2s infinite alternate;
+        }
+        @keyframes bounce {
+            0% { transform: translateY(0);}
+            100% { transform: translateY(-15px);}
+        }
+        #game {
+            display: grid;
+            grid-template-columns: repeat(3, 90px);
+            grid-template-rows: repeat(3, 90px);
+            gap: 12px;
+            margin: 30px 0;
+            background: #fff176;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px #ffb34777;
+            padding: 18px;
+        }
+        .cell {
+            width: 90px;
+            height: 90px;
+            background: #fff;
+            border: 4px dashed #ffb347;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+            border-radius: 18px;
+            position: relative;
+            box-shadow: 0 2px 8px #ffe06655;
+        }
+        .cell:hover {
+            background: #ffe066;
+            transform: scale(1.08) rotate(-3deg);
+        }
+        .cell.funny-pop {
+            animation: pop 0.4s;
+        }
+        @keyframes pop {
+            0% { transform: scale(1) rotate(0);}
+            50% { transform: scale(1.3) rotate(10deg);}
+            100% { transform: scale(1) rotate(0);}
+        }
+        .cell.x {
+            color: #ff5e57;
+            text-shadow: 2px 2px 0 #fff176;
+            font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+        }
+        .cell.o {
+            color: #3ec300;
+            text-shadow: 2px 2px 0 #fff176;
+            font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+        }
+        #status {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #3ec300;
+            background: #fff176;
+            border-radius: 10px;
+            padding: 10px 24px;
+            box-shadow: 0 2px 8px #ffb34755;
+            font-weight: bold;
+            min-height: 2.5em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #reset {
+            padding: 12px 30px;
+            font-size: 1.2em;
+            background: #ff5e57;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+            box-shadow: 0 2px 8px #ffb34755;
+            transition: background 0.2s, transform 0.2s;
+        }
+        #reset:hover {
+            background: #ffb347;
+            color: #ff5e57;
+            transform: scale(1.08) rotate(-2deg);
+        }
+        .funny-face {
+            font-size: 1.2em;
+            margin-left: 10px;
+            animation: face-bounce 1.2s infinite alternate;
+        }
+        @keyframes face-bounce {
+            0% { transform: translateY(0);}
+            100% { transform: translateY(-6px);}
+        }
+        .confetti {
+            position: fixed;
+            left: 0; top: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 999;
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: confetti-fall 1.5s linear forwards;
+        }
+        @keyframes confetti-fall {
+            0% { transform: translateY(-40px) scale(1);}
+            100% { transform: translateY(100vh) scale(0.7);}
+        }
+    </style>
+</head>
+<body>
+    <h1>Tic Tac Toe 🤪</h1>
+    <div id="status">Player X's turn <span class="funny-face">😜</span></div>
+    <div id="game"></div>
+    <button id="reset">Restart Game 🎉</button>
+    <canvas class="confetti"></canvas>
+    <script>
+        const gameContainer = document.getElementById('game');
+        const statusDiv = document.getElementById('status');
+        const resetBtn = document.getElementById('reset');
+        const confettiCanvas = document.querySelector('.confetti');
+        let board = Array(9).fill('');
+        let currentPlayer = 'X';
+        let gameActive = true;
+
+        function funnyFace() {
+            const faces = ['😜','😂','🤪','😝','😆','😛','😹','🤣','😺','😻'];
+            return faces[Math.floor(Math.random() * faces.length)];
+        }
+
+        function renderBoard() {
+            gameContainer.innerHTML = '';
+            board.forEach((cell, idx) => {
+                const cellDiv = document.createElement('div');
+                cellDiv.className = 'cell';
+                if (cell === 'X') {
+                    cellDiv.classList.add('x');
+                    cellDiv.textContent = '🦄';
+                } else if (cell === 'O') {
+                    cellDiv.classList.add('o');
+                    cellDiv.textContent = '🐸';
+                } else {
+                    cellDiv.textContent = '';
+                }
+                cellDiv.addEventListener('click', () => handleCellClick(idx, cellDiv));
+                gameContainer.appendChild(cellDiv);
+            });
+        }
+
+        function handleCellClick(idx, cellDiv) {
+            if (!gameActive || board[idx]) return;
+            board[idx] = currentPlayer;
+            cellDiv.classList.add('funny-pop');
+            setTimeout(() => cellDiv.classList.remove('funny-pop'), 400);
+            renderBoard();
+            if (checkWinner()) {
+                statusDiv.innerHTML = `Player ${currentPlayer} wins! <span class="funny-face">${currentPlayer === 'X' ? '🦄' : '🐸'}</span>`;
+                gameActive = false;
+                launchConfetti();
+            } else if (board.every(cell => cell)) {
+                statusDiv.innerHTML = `It's a draw! <span class="funny-face">🤡</span>`;
+                gameActive = false;
+                launchConfetti();
+            } else {
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                statusDiv.innerHTML = `Player ${currentPlayer}'s turn <span class="funny-face">${funnyFace()}</span>`;
+            }
+        }
+
+        function checkWinner() {
+            const winPatterns = [
+                [0,1,2],[3,4,5],[6,7,8],
+                [0,3,6],[1,4,7],[2,5,8],
+                [0,4,8],[2,4,6]
+            ];
+            return winPatterns.some(pattern => {
+                const [a, b, c] = pattern;
+                return board[a] && board[a] === board[b] && board[a] === board[c];
+            });
+        }
+
+        function resetGame() {
+            board = Array(9).fill('');
+            currentPlayer = 'X';
+            gameActive = true;
+            statusDiv.innerHTML = `Player ${currentPlayer}'s turn <span class="funny-face">${funnyFace()}</span>`;
+            renderBoard();
+            clearConfetti();
+        }
+
+        resetBtn.addEventListener('click', resetGame);
+
+        // Confetti animation for kids
+        function launchConfetti() {
+            clearConfetti();
+            const ctx = confettiCanvas.getContext('2d');
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+            let pieces = [];
+            const colors = ['#ff5e57','#3ec300','#fff176','#ffb347','#ffb3c6','#a3e635','#fbbf24','#f472b6'];
+            for (let i = 0; i < 40; i++) {
+                pieces.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: -20,
+                    r: 8 + Math.random() * 10,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speed: 2 + Math.random() * 4,
+                    angle: Math.random() * Math.PI * 2,
+                    spin: Math.random() * 0.1 - 0.05
+                });
+            }
+            let frame = 0;
+            function draw() {
+                ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+                pieces.forEach(p => {
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle + frame * p.spin);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.r, 0, 2 * Math.PI);
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = 0.8;
+                    ctx.fill();
+                    ctx.restore();
+                    p.y += p.speed;
+                    p.x += Math.sin(frame/10 + p.r) * 1.2;
+                });
+                frame++;
+                if (frame < 80) {
+                    requestAnimationFrame(draw);
+                }
+            }
+            draw();
+        }
+        function clearConfetti() {
+            const ctx = confettiCanvas.getContext('2d');
+            ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+        }
+
+        renderBoard();
+    </script>
+</body>
+</html>

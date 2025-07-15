@@ -855,6 +855,7 @@ class Coder:
         return {"role": "user", "content": image_messages}
 
     def run_stream(self, user_message):
+        print(f"🔍 XXX base_coder Run stream: {user_message}")
         self.io.user_input(user_message)
         self.init_before_message()
         yield from self.send_message(user_message)
@@ -1415,6 +1416,7 @@ class Coder:
         return True
 
     def send_message(self, inp):
+        print(f"🔍 Send message: {inp}")
         self.event("message_send_starting")
 
         # Notify IO that LLM processing is starting
