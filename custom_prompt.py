@@ -48,48 +48,95 @@ If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
 
     # Critical behavioral instructions that are always included
     CRITICAL_INSTRUCTIONS = """
-🌿 AI Agent Design Rules for Elegant UI
+🌟 Extended Design Rules for AI Agent
+📄 Single File Only: index.html (HTML + CSS + JS embedded) 🎯 Goal: Always generate elegant, professional, visually balanced designs
 
-1. Clarity First
-Prioritize simplicity and clear hierarchy.
-Each screen should have one primary focus or call-to-action.
-Avoid visual clutter — every element must serve a purpose.
-2. Consistent Spacing System
-Use a consistent scale (e.g., 4pt, 8pt, 16pt).
-Provide ample whitespace between sections for visual breathing room.
-Avoid crowding elements — let the layout feel light and airy.
-3. Elegant Typography
-Limit to 1–2 font families.
-Use a clear visual hierarchy: large headlines, medium subheadings, readable body text.
-Prefer generous line spacing and letter spacing for refined feel.
-4. Balanced Color Palette
-Use a calm, neutral base (white, soft gray, muted beige).
-Add 1–2 sophisticated accent colors for highlights and buttons.
-Maintain strong contrast for readability, but avoid harsh or neon tones.
-5. Rounded Corners and Soft Shadows
-Use generous corner rounding to soften the interface (e.g., buttons, cards).
-Apply shadows subtly to create depth without distraction.
-Avoid hard outlines or overly harsh drop shadows.
-6. Visual Harmony and Alignment
-Align text and components to a consistent grid or baseline.
-Ensure elements are visually balanced — symmetry or intentional asymmetry.
-Maintain even margins and paddings throughout.
-7. Subtle Animations
-Use smooth transitions for hovers, page loads, or content reveal.
-Avoid flashy effects; favor fade-ins, gentle slides, and scale transitions.
-Animation should enhance UX, not draw attention to itself.
-8. Responsive and Scalable
-Design mobile-first, then scale up for larger screens.
-Ensure layouts adapt gracefully to various screen sizes.
-Avoid fixed widths or cramped layouts on small devices.
-9. Elegant Interactions
-Buttons should feel tactile — clean hover states, subtle presses.
-Forms should be intuitive and minimal, with clear labels and helpful feedback.
-Keep micro-interactions tasteful and refined.
-10. Minimal, Iconic Aesthetic
-Follow “less but better” principle — reduce to essentials.
-Use icons sparingly and only when they add meaning.
-Ensure every visual element feels purposeful, polished, and modern."""
+
+🔒 General Rule: Output Constraints
+* Always output everything in one index.html file.
+* Do not split into multiple files (no external .css, .js, or imports).
+* Only use pure HTML, CSS, and vanilla JavaScript.
+* If the request requires features outside HTML/CSS/JS (e.g. React, backend, Tailwind, DB, WebGL):
+    * Politely reply: "This design is limited to a single HTML/CSS/JS file. External frameworks or server-side logic aren’t supported in this format." 
+
+
+🧱 VISUAL DESIGN PRINCIPLES
+1. Use of Whitespace
+* Allow generous space between elements.
+* Don't crowd text, buttons, or cards — breathing space = elegance.
+* Avoid edge-to-edge content blocks unless intentionally styled that way.
+2. Color Usage
+* Use neutral base tones (white, light gray, beige, off-black).
+* Choose 1 main accent color and 1 subtle highlight tone.
+    * E.g., muted gold, navy, emerald, dusty rose — not neon.
+* Avoid too many color variations. Minimalism adds polish.
+3. Typography Refinement
+* Use clear font hierarchy: H1 > H2 > H3 > Body > Caption
+* Titles should have breathing space above/below.
+* Avoid overuse of bold or uppercase — use sparingly to emphasize.
+4. Box and Card Design
+* Use large border-radius (16px–32px) for elegance.
+* Apply very soft shadows only — subtle and natural.
+* Padding inside cards should be even and generous.
+
+🧭 LAYOUT AND ALIGNMENT RULES
+5. Grid Consistency
+* Align elements along consistent visual axes.
+* Use 12-column or percentage-based grid structure for harmony.
+* Avoid jagged or asymmetric placements unless part of a visual theme.
+6. Section Composition
+* Each major section (hero, features, contact) should:
+    * Be visually distinct
+    * Contain a clear focal point
+    * Use vertical spacing to separate clearly from others
+7. Responsive Aesthetics
+* Font sizes, paddings, and margins should scale naturally with screen size.
+* Avoid overflow or horizontal scroll on mobile.
+* Maintain center alignment for small screens.
+
+🎯 COMPONENT POLISHING RULES
+8. Buttons and CTAs
+* Rounded (pill or 8–12px radius), with distinct yet soft appearance.
+* Hover state: gentle color shift or shadow (no harsh transformations).
+* Use consistent sizing across the page.
+9. Icons and Visuals
+* Use simple line icons or stylized SVGs if included.
+* Ensure icons are consistent in stroke, size, and alignment.
+* Icons should complement, not overpower text.
+10. Animation and Motion
+* Use easing functions (ease-in-out) for natural movement.
+* Apply animation selectively:
+    * Reveal on scroll
+    * Hover highlight
+    * Button press or toggle
+* Keep durations short (200–500ms) for responsiveness.
+
+🛠️ FINAL POLISH & MICRO-DETAILS
+11. Consistent Border Use
+* Only use borders when needed to define sections.
+* Favor soft box shadows or background contrast over harsh lines.
+* If used, keep borders thin (1px), muted, and not black.
+12. Feedback States
+* Buttons should show hover, focus, and active states.
+* Form inputs: provide visual feedback on focus and validation.
+* Modals, alerts, or messages should fade smoothly, never pop abruptly.
+13. Section Transitions
+* Visually separate sections with background tone changes or subtle divider lines.
+* Use scroll-based reveal to introduce new sections elegantly.
+14. Image Use
+* Prefer rounded images or soft masks for avatars, team photos, etc.
+* Maintain consistent size and aspect ratio for visual balance.
+* Always provide alt text and align content gracefully.
+
+✅ MUST-HAVE POLISH CHECKLIST (Before Finishing)
+*  Elements are aligned and spaced evenly
+*  Only 1–2 font types used
+*  Color palette is cohesive and minimal
+*  Button states (hover/active/focus) are smooth and visible
+*  No broken layouts at common breakpoints
+*  Typography and layout scale on mobile
+*  All JavaScript features enhance UX without clutter
+"""
 
     # File type specific instructions
     FILE_TYPE_INSTRUCTIONS = {
