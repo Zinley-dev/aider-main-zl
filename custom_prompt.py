@@ -55,31 +55,31 @@ You are working with a compact JSON format for spreadsheets that minimizes token
 
 **COMPACT JSON STRUCTURE:**
 
-{
+{{
   "sheets": [
-    {
+    {{
       "n": "Sheet1",                // sheet name (abbreviated from "name")
-      "c": {                        // cells (abbreviated from "cells")
+      "c": {{                        // cells (abbreviated from "cells")
         "A1": "Header 1",           // simple value form (string/number/boolean)
-        "B1": { "v": "Header 2" },  // object form with value
-        "A2": { "v": 10 },          // number value
-        "B2": { "v": 20 },
-        "C2": {                     // formula cell with style
+        "B1": {{ "v": "Header 2" }},  // object form with value
+        "A2": {{ "v": 10 }},          // number value
+        "B2": {{ "v": 20 }},
+        "C2": {{                     // formula cell with style
           "f": "=A2+B2",            // formula (abbreviated from "formula")
-          "s": {                    // style (abbreviated from "style")
+          "s": {{                    // style (abbreviated from "style")
             "b": "bold",            // bold (abbreviated from "fontWeight")
             "bg": "#e8f5e8",        // background color
             "tc": "#2e7d32",        // text color
             "ta": "r"               // text align: "l" (left), "ctr" (center), "r" (right)
-          }
-        }
-      },
+          }}
+        }}
+      }},
       "cols": [100, 120, 150],      // column widths (only if non-default)
       "rows": [24, 30, 24]          // row heights (only if non-default)
-    }
+    }}
   ],
   "active": 0                       // active sheet index (not id)
-}
+}}
 
 **KEY DIFFERENCES FROM FULL FORMAT:**
 
@@ -104,7 +104,7 @@ You are working with a compact JSON format for spreadsheets that minimizes token
    - Only valid cell IDs: A1, B2, C3, AA1, AB2, etc.
    - No redundant "id", "row", "col" properties
    - Direct primitive values allowed ("A1": "Header 1")
-   - Object form for formulas/styles ("A1": { "f": "=SUM(B1:B10)" })
+   - Object form for formulas/styles ("A1": {{ "f": "=SUM(B1:B10)" }})
 
 3. **OMITTED DEFAULTS:**
    - No "computed" values (calculated at runtime)
@@ -132,19 +132,19 @@ All Excel/Google Sheets formulas are supported with the same syntax:
 - Error handling: IFERROR, ISERROR, ISBLANK, ISNUMBER, ISTEXT
 
 **FORMULA EXAMPLES:**
-"C2": { "f": "=A2+B2" }                                    // Simple arithmetic
-"D2": { "f": "=SUM(A1:A10)" }                             // Sum range
-"E2": { "f": "=AVERAGE(B1:B5)" }                          // Average
-"F2": { "f": "=IF(A2>10,\"High\",\"Low\")" }             // Conditional
-"G2": { "f": "=CONCATENATE(A2,\" \",B2)" }               // Text joining
-"H2": { "f": "=VLOOKUP(A2,D1:F10,2,FALSE)" }            // Lookup
-"I2": { "f": "=IFERROR(A2/B2,\"N/A\")" }                 // Error handling
-"J2": { "f": "=ROUND(A2*1.08,2)" }                       // Math function
-"K2": { "f": "=COUNT(A1:A10)" }                          // Count non-empty
-"L2": { "f": "=MAX(A1:A10)" }                            // Maximum value
-"M2": { "f": "=MIN(A1:A10)" }                            // Minimum value
-"N2": { "f": "=TODAY()" }                                // Current date
-"O2": { "f": "=A2&\" \"&B2" }                           // Text concatenation operator
+"C2": {{ "f": "=A2+B2" }}                                    // Simple arithmetic
+"D2": {{ "f": "=SUM(A1:A10)" }}                             // Sum range
+"E2": {{ "f": "=AVERAGE(B1:B5)" }}                          // Average
+"F2": {{ "f": "=IF(A2>10,\"High\",\"Low\")" }}             // Conditional
+"G2": {{ "f": "=CONCATENATE(A2,\" \",B2)" }}               // Text joining
+"H2": {{ "f": "=VLOOKUP(A2,D1:F10,2,FALSE)" }}            // Lookup
+"I2": {{ "f": "=IFERROR(A2/B2,\"N/A\")" }}                 // Error handling
+"J2": {{ "f": "=ROUND(A2*1.08,2)" }}                       // Math function
+"K2": {{ "f": "=COUNT(A1:A10)" }}                          // Count non-empty
+"L2": {{ "f": "=MAX(A1:A10)" }}                            // Maximum value
+"M2": {{ "f": "=MIN(A1:A10)" }}                            // Minimum value
+"N2": {{ "f": "=TODAY()" }}                                // Current date
+"O2": {{ "f": "=A2&\" \"&B2" }}                           // Text concatenation operator
 
 **COMPREHENSIVE FUNCTION REFERENCE GUIDE:**
 
@@ -274,53 +274,53 @@ All styling options available with shorthand keys:
 "A1": "Product Name"  // Direct primitive form
 
 **Styled Header:**
-"A1": {
+"A1": {{
   "v": "Product Name",
-  "s": {
+  "s": {{
     "b": "bold",
     "bg": "#2196f3",
     "tc": "#ffffff",
     "ta": "ctr",
     "fz": 14
-  }
-}
+  }}
+}}
 
 **Formula Cell:**
-"C2": {
+"C2": {{
   "f": "=A2+B2"
-}
+}}
 
 **Styled Formula Cell:**
-"F6": {
+"F6": {{
   "f": "=SUM(A1:A10)",
-  "s": {
+  "s": {{
     "bg": "#e8f5e8",
     "tc": "#2e7d32",
     "b": "bold",
     "ta": "r",
     "bd": "2px solid #4caf50"
-  }
-}
+  }}
+}}
 
 **Advanced Examples:**
 
 **Financial Cell with Conditional Formatting:**
-"D5": {
+"D5": {{
   "f": "=IF(C5>0,C5,ABS(C5))",
-  "s": {
+  "s": {{
     "bg": "#e8f5e8",
     "tc": "#2e7d32",
     "b": "600",
     "ta": "r",
     "fz": 12,
     "ff": "Arial"
-  }
-}
+  }}
+}}
 
 **Header with Custom Border:**
-"A1": {
+"A1": {{
   "v": "Q4 Report",
-  "s": {
+  "s": {{
     "b": "bold",
     "bg": "#1976d2",
     "tc": "#ffffff",
@@ -328,72 +328,72 @@ All styling options available with shorthand keys:
     "fz": 16,
     "bd": "3px solid #0d47a1",
     "ff": "Arial"
-  }
-}
+  }}
+}}
 
 **Percentage Cell:**
-"E3": {
+"E3": {{
   "f": "=D3/C3*100",
-  "s": {
+  "s": {{
     "bg": "#fff3e0",
     "tc": "#e65100",
     "ta": "r",
     "fz": 11
-  }
-}
+  }}
+}}
 
 **Date Cell:**
-"F1": {
+"F1": {{
   "f": "=TODAY()",
-  "s": {
+  "s": {{
     "bg": "#f5f5f5",
     "tc": "#424242",
     "ta": "ctr",
     "fz": 10
-  }
-}
+  }}
+}}
 
 **Status Indicator:**
-"G2": {
+"G2": {{
   "f": "=IF(F2>90,\"Complete\",\"In Progress\")",
-  "s": {
+  "s": {{
     "bg": "#4caf50",
     "tc": "#ffffff",
     "b": "bold",
     "ta": "ctr",
     "bd": "1px solid #388e3c"
-  }
-}
+  }}
+}}
 
 **Multiple Sheet Example:**
-{
+{{
   "sheets": [
-    {
+    {{
       "n": "Summary",
-      "c": {
-        "A1": { "v": "Total Sales", "s": { "b": "bold", "bg": "#2196f3", "tc": "#ffffff" } },
-        "B1": { "f": "=SUM(Data.B:B)", "s": { "ta": "r", "fz": 14 } }
-      }
-    },
-    {
+      "c": {{
+        "A1": {{ "v": "Total Sales", "s": {{ "b": "bold", "bg": "#2196f3", "tc": "#ffffff" }} }},
+        "B1": {{ "f": "=SUM(Data.B:B)", "s": {{ "ta": "r", "fz": 14 }} }}
+      }}
+    }},
+    {{
       "n": "Data",
-      "c": {
+      "c": {{
         "A1": "Item",
         "B1": "Amount",
         "A2": "Product A",
-        "B2": { "v": 1500 }
-      },
+        "B2": {{ "v": 1500 }}
+      }},
       "cols": [120, 100]
-    }
+    }}
   ],
   "active": 0
-}
+}}
 
 **DATA TYPE HANDLING:**
-- Text: "A1": "Hello World" or { "v": "Hello World" }
-- Numbers: "A1": 123 or { "v": 123 }
-- Booleans: "A1": true or { "v": true }
-- Formulas: { "f": "=A1+B1" }
+- Text: "A1": "Hello World" or {{ "v": "Hello World" }}
+- Numbers: "A1": 123 or {{ "v": 123 }}
+- Booleans: "A1": true or {{ "v": true }}
+- Formulas: {{ "f": "=A1+B1" }}
 - Empty: Simply omit the cell from the "c" object
 
 **COLUMN/ROW MANAGEMENT:**
