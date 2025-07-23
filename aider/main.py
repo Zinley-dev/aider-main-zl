@@ -592,7 +592,15 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
 
     # Parse again to include any arguments that might have been defined in .env
     # Use the original argv since --directory should be properly defined now
-    args = parser.parse_args(argv)
+    try:
+        args = parser.parse_args(argv)
+    except SystemExit as e:
+        # If parsing with original argv fails (likely due to --directory recognition issues),
+        # fall back to using argv_without_directory and manually set directory_arg
+        if e.code != 0:  # Only catch actual errors, not successful --help exits
+            args = parser.parse_args(argv_without_directory)
+        else:
+            raise
     
     # Manually set the directory attribute if it was provided
     # This ensures it's always available even if parser had issues
