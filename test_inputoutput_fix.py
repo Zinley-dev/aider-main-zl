@@ -30,7 +30,7 @@ def test_directory_with_inputoutput():
             return False
         
         # Check that help output is shown (basic functionality works)
-        if "usage: aider" in result.stdout or "usage: main.py" in result.stdout:
+        if "usage: snowx" in result.stdout or "usage: main.py" in result.stdout:
             print("✓ Help output shown, no InputOutput errors")
             return True
         else:
