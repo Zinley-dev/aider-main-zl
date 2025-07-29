@@ -10,6 +10,7 @@ from pathlib import Path
 
 import argparse
 import shtab
+import configargparse
 
 try:
     import git
@@ -590,22 +591,34 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
     # Load the .env file specified in the arguments
     loaded_dotenvs = load_dotenv_files(git_root, args.env_file, args.encoding)
 
-    # Parse again to include any arguments that might have been defined in .env
-    # Use the original argv since --directory should be properly defined now
-    try:
-        args = parser.parse_args(argv)
-    except SystemExit as e:
-        # If parsing with original argv fails (likely due to --directory recognition issues),
-        # fall back to using argv_without_directory and manually set directory_arg
-        if e.code != 0:  # Only catch actual errors, not successful --help exits
-            args = parser.parse_args(argv_without_directory)
-        else:
-            raise
+    # Final parsing with improved robustness for --directory argument
+    # Create a fresh parser to avoid any potential state issues from previous parsing attempts
+    final_parser = get_parser(default_config_files, git_root)
     
-    # Manually set the directory attribute if it was provided
-    # This ensures it's always available even if parser had issues
+    # Always use argv_without_directory to avoid intermittent configargparse issues
+    # The --directory argument was already processed and applied above
+    try:
+        args = final_parser.parse_args(argv_without_directory)
+    except SystemExit as e:
+        # Only re-raise if it's a help or version request (exit code 0)
+        if e.code == 0:
+            raise
+        # For any other parsing errors, this shouldn't happen since we filtered --directory
+        # but if it does, try once more with a minimal fallback
+        try:
+            args = parser.parse_args(argv_without_directory)
+        except:
+            # Absolute last resort - should never reach here
+            print("Error: Failed to parse command line arguments", file=sys.stderr)
+            return 1
+    
+    # Always ensure directory attribute is set if provided
+    # This guarantees the attribute exists regardless of parsing path taken
     if directory_arg:
         args.directory = directory_arg
+    elif not hasattr(args, 'directory'):
+        # Ensure the attribute always exists even if not provided
+        args.directory = None
 
     if args.shell_completions:
         # Ensure parser.prog is set for shtab, though it should be by default
