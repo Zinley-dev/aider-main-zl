@@ -36,7 +36,6 @@ from aider.models import ModelSettings
 from aider.onboarding import offer_openrouter_oauth, select_default_model
 from aider.repo import ANY_GIT_ERROR, GitRepo
 from aider.report import report_uncaught_exceptions
-from aider.versioncheck import check_version, install_from_main_branch, install_upgrade
 from aider.watch import FileWatcher
 
 from .dump import dump  # noqa: F401
@@ -823,23 +822,6 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
             analytics.event("exit", reason="Recursing with correct repo")
             return main(argv, input, output, right_repo_root, return_coder=return_coder)
 
-    if args.just_check_update:
-        update_available = check_version(io, just_check=True, verbose=args.verbose)
-        analytics.event("exit", reason="Just checking update")
-        return 0 if not update_available else 1
-
-    if args.install_main_branch:
-        success = install_from_main_branch(io)
-        analytics.event("exit", reason="Installed main branch")
-        return 0 if success else 1
-
-    if args.upgrade:
-        success = install_upgrade(io)
-        analytics.event("exit", reason="Upgrade completed")
-        return 0 if success else 1
-
-    if args.check_update:
-        check_version(io, verbose=args.verbose)
 
     if args.git:
         git_root = setup_git(git_root, io)

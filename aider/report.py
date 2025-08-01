@@ -5,10 +5,12 @@ import sys
 import traceback
 import urllib.parse
 import webbrowser
+from pathlib import Path
 
 from aider import __version__
 from aider.urls import github_issues
-from aider.versioncheck import VERSION_CHECK_FNAME
+
+VERSION_CHECK_FNAME = Path.home() / ".aider" / "caches" / "versioncheck"
 
 FENCE = "`" * 3
 

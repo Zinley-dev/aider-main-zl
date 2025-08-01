@@ -577,37 +577,6 @@ def get_parser(default_config_files, git_root):
     #########
     group = parser.add_argument_group("Upgrading")
     group.add_argument(
-        "--just-check-update",
-        action="store_true",
-        help="Check for updates and return status in the exit code",
-        default=False,
-    )
-    group.add_argument(
-        "--check-update",
-        action=argparse.BooleanOptionalAction,
-        help="Check for new aider versions on launch",
-        default=True,
-    )
-    group.add_argument(
-        "--show-release-notes",
-        action=argparse.BooleanOptionalAction,
-        help="Show release notes on first run of new version (default: None, ask user)",
-        default=None,
-    )
-    group.add_argument(
-        "--install-main-branch",
-        action="store_true",
-        help="Install the latest version from the main branch",
-        default=False,
-    )
-    group.add_argument(
-        "--upgrade",
-        "--update",
-        action="store_true",
-        help="Upgrade aider to the latest version from PyPI",
-        default=False,
-    )
-    group.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {__version__}",
