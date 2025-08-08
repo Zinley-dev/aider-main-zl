@@ -1741,6 +1741,28 @@
   lazy: true
   reminder: sys
 
+- name: snowx/gpt-5
+  edit_format: diff
+  weak_model_name: snowx/gpt-5-mini
+  use_repo_map: true
+  lazy: false
+  reminder: sys
+  examples_as_sys_msg: false
+  editor_edit_format: editor-diff
+
+- name: snowx/gpt-5-mini
+  edit_format: diff
+  weak_model_name: snowx/gpt-5-nano
+  use_repo_map: true
+  lazy: false
+  reminder: sys
+  examples_as_sys_msg: false
+
+- name: snowx/gpt-5-nano
+  weak_model_name: snowx/gpt-5-nano
+  lazy: true
+  reminder: sys
+
 - name: snowx/o4-mini
   edit_format: diff
   weak_model_name: snowx/gpt-4.1-mini

@@ -119,6 +119,9 @@ class SnowXClient:
         "snowx/llama-maverick": "Llama-4-Maverick-17B-128E-Instruct-FP8",
         "snowx/deepseek-r1": "DeepSeek-R1",
         "snowx/deepseek-v3": "DeepSeek-V3",
+        "snowx/gpt-5": "gpt-5-chat",
+        "snowx/gpt-5-mini": "gpt-5-mini",
+        "snowx/gpt-5-nano": "gpt5-nano",
     }
     
     # Map model to provider
@@ -138,6 +141,9 @@ class SnowXClient:
         "Llama-4-Maverick-17B-128E-Instruct-FP8": "FOUNDRY",
         "DeepSeek-R1": "FOUNDRY",
         "DeepSeek-V3": "FOUNDRY",
+        "gpt-5-chat": "FOUNDRY",
+        "gpt-5-mini": "FOUNDRY",
+        "gpt5-nano": "FOUNDRY",
     }
     
     def __init__(self):
