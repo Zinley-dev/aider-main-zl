@@ -508,9 +508,9 @@
         "supports_system_messages": true
     },
     "snowx/gpt-5": {
-        "max_tokens": 65536,
+        "max_tokens": 16384,
         "max_input_tokens": 2097152,
-        "max_output_tokens": 65536,
+        "max_output_tokens": 16384,
         "input_cost_per_token": 0.0,
         "output_cost_per_token": 0.0,
         "litellm_provider": "snowx",
@@ -522,9 +522,9 @@
         "supports_tool_choice": true
     },
     "snowx/gpt-5-mini": {
-        "max_tokens": 32768,
+        "max_tokens": 16384,
         "max_input_tokens": 1048576,
-        "max_output_tokens": 32768,
+        "max_output_tokens": 16384,
         "input_cost_per_token": 0.0,
         "output_cost_per_token": 0.0,
         "litellm_provider": "snowx",
