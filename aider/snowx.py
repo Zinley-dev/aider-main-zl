@@ -109,6 +109,8 @@ class SnowXClient:
         "snowx/gpt-4.1-nano": "gpt-4.1-nano",
         "snowx/o4-mini": "o4-mini",
         "snowx/o4-mini-high": "o4-mini",  # Uses o4-mini with high reasoning effort
+        "snowx/opus4": "us.anthropic.claude-opus-4-20250514-v1:0",
+        "snowx/opus4.1": "us.anthropic.claude-opus-4-1-20250805-v1:0",
         "snowx/claude-opus-4": "us.anthropic.claude-opus-4-20250514-v1:0",
         "snowx/claude-sonnet-4": "us.anthropic.claude-sonnet-4-20250514-v1:0",
         "snowx/claude-3-7-sonnet": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
@@ -132,6 +134,7 @@ class SnowXClient:
         "gpt-4.1-nano": "GPT",
         "o4-mini": "GPT",
         "us.anthropic.claude-opus-4-20250514-v1:0": "BEDROCK",
+        "us.anthropic.claude-opus-4-1-20250805-v1:0": "BEDROCK",
         "us.anthropic.claude-sonnet-4-20250514-v1:0": "BEDROCK",
         "us.anthropic.claude-3-7-sonnet-20250219-v1:0": "BEDROCK",
         "us.anthropic.claude-3-5-sonnet-20241022-v2:0": "BEDROCK",
