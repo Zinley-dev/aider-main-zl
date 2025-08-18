@@ -622,12 +622,36 @@
                         <div class="form-group">
                             <label>🤖 Model:</label>
                             <select class="model">
-                                <option value="snowx/gpt-4.1" selected>SnowX GPT-4.1 (Default)</option>
-                                <option value="snowx/gpt-4o">SnowX GPT-4O</option>
-                                <option value="gpt-4o">GPT-4O</option>
-                                <option value="gpt-4o-mini">GPT-4O Mini</option>
-                                <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                                <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                                <optgroup label="SnowX GPT Models">
+                                    <option value="snowx/gpt-4.1" selected>SnowX GPT-4.1 (Default)</option>
+                                    <option value="snowx/gpt-4o">SnowX GPT-4O</option>
+                                    <option value="snowx/gpt-4.1-mini">SnowX GPT-4.1 Mini</option>
+                                    <option value="snowx/gpt-4.1-nano">SnowX GPT-4.1 Nano (Lightweight)</option>
+                                    <option value="snowx/o4-mini">SnowX O4-Mini (Reasoning)</option>
+                                    <option value="snowx/o4-mini-high">SnowX O4-Mini High (Enhanced Reasoning)</option>
+                                </optgroup>
+                                <optgroup label="SnowX Claude Models">
+                                    <option value="snowx/claude-opus-4">SnowX Claude Opus 4 (32K)</option>
+                                    <option value="snowx/claude-sonnet-4">SnowX Claude Sonnet 4 (32K)</option>
+                                    <option value="snowx/claude-3-7-sonnet">SnowX Claude 3.7 Sonnet (64K)</option>
+                                    <option value="snowx/claude-3-5-sonnet">SnowX Claude 3.5 Sonnet</option>
+                                </optgroup>
+                                <optgroup label="SnowX Reasoning Models">
+                                    <option value="snowx/grok-3">SnowX Grok-3 (Reasoning)</option>
+                                    <option value="snowx/grok-3-mini">SnowX Grok-3 Mini (Reasoning)</option>
+                                    <option value="snowx/mai-ds-r1">SnowX MAI-DS-R1 (Reasoning)</option>
+                                    <option value="snowx/deepseek-r1">SnowX DeepSeek-R1 (Reasoning)</option>
+                                </optgroup>
+                                <optgroup label="SnowX Other Models">
+                                    <option value="snowx/llama-maverick">SnowX Llama 4 Maverick 17B</option>
+                                    <option value="snowx/deepseek-v3">SnowX DeepSeek-V3</option>
+                                </optgroup>
+                                <optgroup label="Standard Models">
+                                    <option value="gpt-4o">GPT-4O</option>
+                                    <option value="gpt-4o-mini">GPT-4O Mini</option>
+                                    <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                                    <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                                </optgroup>
                             </select>
                         </div>
 
@@ -929,6 +953,7 @@
             sendMessageBtn.addEventListener('click', async () => {
                 const message = content.querySelector('.message').value.trim();
                 const files = content.querySelector('.files').value.split('\n').filter(f => f.trim());
+                const selectedModel = content.querySelector('.model').value;
 
                 if (!message) {
                     alert('Please enter a message');
@@ -968,6 +993,7 @@
                             session_id: session.sessionId,
                             message: message,
                             files: files,
+                            model: selectedModel,
                             stream: true
                         }),
                         signal: session.controller.signal

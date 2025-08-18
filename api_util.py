@@ -22,6 +22,36 @@ def get_or_create_session(session_id: str = None, repo_path: str = None, model: 
     if session_id:
         session = session_manager.get_session(session_id)
         if session:
+            # Check if model has changed
+            current_coder = session["coder"]
+            current_model_name = current_coder.main_model.name if current_coder.main_model else None
+            
+            if current_model_name and model and current_model_name != model:
+                # Model has changed, create new coder with new model
+                print(f"Model changed from {current_model_name} to {model}. Updating session...")
+                
+                # Create Model object for the new model
+                new_model = Model(model)
+                
+                # Create new coder with new model, preserving chat history and files
+                new_coder = Coder.create(
+                    main_model=new_model,
+                    io=session["io"],
+                    from_coder=current_coder,
+                    edit_format=edit_format,
+                    auto_commits=auto_commits,
+                    stream=True,
+                    cache_prompts=True,
+                    use_git=True,
+                    repo=current_coder.repo if hasattr(current_coder, 'repo') else None
+                )
+                
+                # Update session with new coder
+                session["coder"] = new_coder
+                session_manager.update_session_activity(session_id)
+                
+                print(f"Session updated with new model: {model}")
+            
             return session, session_id
     
     # Tạo session mới
@@ -479,8 +509,8 @@ def create_temp_repo(files: List[str] = None) -> str:
     """
     Tạo temporary repo directory
     """
-    # temp_dir = os.path.join("/Users/hoangnm/Desktop/test", "temp")
-    temp_dir = os.path.join("/app", "temp")
+    temp_dir = os.path.join("/Users/hoangnm/Desktop/test", "temp")
+    # temp_dir = os.path.join("/app", "temp")
     
     # Nếu không có files, dùng mặc định ["index.html"]
     if not files:

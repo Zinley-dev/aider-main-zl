@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Model Update</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 3px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Model Update Feature</h1>
+    
+    <div class="test-section">
+        <h2>1. Create Session with Initial Model</h2>
+        <button onclick="createSession()">Create Session (snowx/gpt-4.1)</button>
+        <div id="session-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Send Message with Different Model</h2>
+        <button onclick="sendWithDifferentModel('snowx/claude-3-5-sonnet')">Send with Claude 3.5</button>
+        <button onclick="sendWithDifferentModel('snowx/deepseek-r1')">Send with DeepSeek R1</button>
+        <button onclick="sendWithDifferentModel('snowx/gpt-4o')">Send with GPT-4O</button>
+        <div id="message-result" class="result"></div>
+    </div>
+    
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        let currentSessionId = null;
+        
+        async function createSession() {
+            const resultDiv = document.getElementById('session-result');
+            resultDiv.textContent = 'Creating session...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: 'snowx/gpt-4.1',
+                        files: ['test.txt']
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentSessionId = data.session_id;
+                    resultDiv.innerHTML = `<span class="success">✅ Session created successfully!</span>
+Session ID: ${data.session_id}
+Model: ${data.model}
+Repository: ${data.repo_path}`;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ Failed to create session: ${data.message}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        }
+        
+        async function sendWithDifferentModel(model) {
+            const resultDiv = document.getElementById('message-result');
+            
+            if (!currentSessionId) {
+                resultDiv.innerHTML = '<span class="error">❌ Please create a session first!</span>';
+                return;
+            }
+            
+            resultDiv.textContent = `Sending message with model: ${model}...`;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: currentSessionId,
+                        message: 'Just testing model update. What model are you using?',
+                        model: model,
+                        stream: false
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<span class="success">✅ Message sent successfully with ${model}!</span>
+Response: ${data.response}
+Session ID: ${data.session_id}`;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ Failed to send message: ${data.message || data.detail}</span>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
