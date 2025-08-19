@@ -26,6 +26,32 @@ def get_or_create_session(session_id: str = None, repo_path: str = None, model: 
             current_coder = session["coder"]
             current_model_name = current_coder.main_model.name if current_coder.main_model else None
             
+            # For streaming requests, always create a new StreamingApiInputOutput instance
+            if use_streaming:
+                print(f"Creating new StreamingApiInputOutput for concurrent request on session {session_id}")
+                new_io = StreamingApiInputOutput()
+                
+                # Create a new coder instance with the new IO but preserve state
+                new_coder = Coder.create(
+                    main_model=current_coder.main_model,
+                    io=new_io,
+                    from_coder=current_coder,
+                    edit_format=edit_format,
+                    auto_commits=auto_commits,
+                    stream=True,
+                    cache_prompts=True,
+                    use_git=True,
+                    repo=current_coder.repo if hasattr(current_coder, 'repo') else None
+                )
+                
+                # Return a modified session dict with the new IO
+                # We don't update the actual session to avoid affecting other requests
+                return {
+                    "coder": new_coder,
+                    "io": new_io,
+                    "repo_path": session.get("repo_path")
+                }, session_id
+            
             if current_model_name and model and current_model_name != model:
                 # Model has changed, create new coder with new model
                 print(f"Model changed from {current_model_name} to {model}. Updating session...")

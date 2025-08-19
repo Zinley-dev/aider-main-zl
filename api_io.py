@@ -150,33 +150,60 @@ class StreamingApiInputOutput(ApiInputOutput):
     
     def __init__(self):
         super().__init__()
-        self.stream_queue = asyncio.Queue()
+        # Instead of a single queue, use a dictionary of queues per request
+        self.request_queues = {}
+        self.active_request_id = None
         self.streaming = False
         self.current_code_buffer = ""
         self.current_file = None
     
-    def start_streaming(self):
-        """Bắt đầu streaming mode"""
+    def start_streaming(self, request_id=None):
+        """Bắt đầu streaming mode với request ID cụ thể"""
+        import uuid
         self.streaming = True
         self.clear_buffers()
         self.current_code_buffer = ""
         self.current_file = None
+        
+        # Create a unique request ID if not provided
+        if request_id is None:
+            request_id = str(uuid.uuid4())
+        
+        self.active_request_id = request_id
+        # Create a new queue for this request
+        self.request_queues[request_id] = asyncio.Queue()
+        return request_id
     
-    def stop_streaming(self):
-        """Dừng streaming mode"""
+    def stop_streaming(self, request_id=None):
+        """Dừng streaming mode cho request cụ thể"""
         self.streaming = False
+        
+        # Clean up the request queue
+        if request_id and request_id in self.request_queues:
+            del self.request_queues[request_id]
+        elif self.active_request_id in self.request_queues:
+            del self.request_queues[self.active_request_id]
+        
+        self.active_request_id = None
     
-    async def emit_event(self, event_type: str, data: dict):
-        """Emit một SSE event"""
+    async def emit_event(self, event_type: str, data: dict, request_id=None):
+        """Emit một SSE event cho request cụ thể"""
         if self.streaming:
             event = {
                 "type": event_type,
                 "data": data,
                 "timestamp": time.time()
             }
-            await self.stream_queue.put(event)
+            
+            # Use the provided request_id or the active one
+            target_request_id = request_id or self.active_request_id
+            
+            if target_request_id and target_request_id in self.request_queues:
+                await self.request_queues[target_request_id].put(event)
+            else:
+                print(f"⚠️ No queue found for request {target_request_id}")
     
-    def emit_event_sync(self, event_type: str, data: dict):
+    def emit_event_sync(self, event_type: str, data: dict, request_id=None):
         """Emit event synchronously - helper method"""
         if self.streaming:
             print(f"🌊 Emitting event: {event_type} - {str(data)[:100]}...")
@@ -186,8 +213,15 @@ class StreamingApiInputOutput(ApiInputOutput):
                 "data": data,
                 "timestamp": time.time()
             }
-            self.stream_queue.put_nowait(event)
-            print(f"📨 Event queued: {event_type}")
+            
+            # Use the provided request_id or the active one
+            target_request_id = request_id or self.active_request_id
+            
+            if target_request_id and target_request_id in self.request_queues:
+                self.request_queues[target_request_id].put_nowait(event)
+                print(f"📨 Event queued for request {target_request_id}: {event_type}")
+            else:
+                print(f"⚠️ No queue found for request {target_request_id}, event {event_type} ignored")
         else:
             print(f"⚠️ Not streaming, event {event_type} ignored")
     
@@ -399,18 +433,28 @@ class StreamingApiInputOutput(ApiInputOutput):
         
         return result
     
-    async def get_stream_events(self) -> AsyncGenerator[dict, None]:
-        """Generator để lấy stream events"""
+    async def get_stream_events(self, request_id=None) -> AsyncGenerator[dict, None]:
+        """Generator để lấy stream events cho request cụ thể"""
         event_count = 0
-        print(f"🎬 Starting get_stream_events generator (streaming={self.streaming})")
         
-        while self.streaming:
+        # Use the provided request_id or the active one
+        target_request_id = request_id or self.active_request_id
+        
+        print(f"🎬 Starting get_stream_events generator for request {target_request_id} (streaming={self.streaming})")
+        
+        if not target_request_id or target_request_id not in self.request_queues:
+            print(f"❌ No queue found for request {target_request_id}")
+            return
+        
+        request_queue = self.request_queues[target_request_id]
+        
+        while self.streaming and target_request_id in self.request_queues:
             try:
                 # Check if there are events in the queue
-                if not self.stream_queue.empty():
-                    event = self.stream_queue.get_nowait()
+                if not request_queue.empty():
+                    event = request_queue.get_nowait()
                     event_count += 1
-                    print(f"📤 Yielding event #{event_count}: {event.get('type', 'unknown')} - {str(event.get('data', {}))[:50]}...")
+                    print(f"📤 Yielding event #{event_count} for request {target_request_id}: {event.get('type', 'unknown')} - {str(event.get('data', {}))[:50]}...")
                     yield event
                 else:
                     # If no events, wait a bit and send heartbeat
@@ -418,10 +462,10 @@ class StreamingApiInputOutput(ApiInputOutput):
                     if event_count % 50 == 0:  # Send heartbeat every 5 seconds (50 * 0.1s)
                         heartbeat = {
                             "type": "heartbeat",
-                            "data": {"status": "alive", "events_sent": event_count, "queue_size": self.stream_queue.qsize()},
+                            "data": {"status": "alive", "events_sent": event_count, "queue_size": request_queue.qsize(), "request_id": target_request_id},
                             "timestamp": time.time()
                         }
-                        print(f"💓 Heartbeat sent (events so far: {event_count}, queue size: {self.stream_queue.qsize()})")
+                        print(f"💓 Heartbeat sent for request {target_request_id} (events so far: {event_count}, queue size: {request_queue.qsize()})")
                         yield heartbeat
                     
             except asyncio.QueueEmpty:
@@ -429,36 +473,42 @@ class StreamingApiInputOutput(ApiInputOutput):
                 await asyncio.sleep(0.1)
                 continue
             except Exception as e:
-                print(f"❌ Error in get_stream_events: {e}")
+                print(f"❌ Error in get_stream_events for request {target_request_id}: {e}")
                 error_event = {
                     "type": "error",
-                    "data": {"message": str(e)},
+                    "data": {"message": str(e), "request_id": target_request_id},
                     "timestamp": time.time()
                 }
                 yield error_event
                 break
         
-        print(f"🏁 Stream ended, total events sent: {event_count}")
+        print(f"🏁 Stream ended for request {target_request_id}, total events sent: {event_count}")
         
         # Send final event to indicate stream end
         final_event = {
             "type": "stream_end",
-            "data": {"total_events": event_count},
+            "data": {"total_events": event_count, "request_id": target_request_id},
             "timestamp": time.time()
         }
         yield final_event
 
-    def force_flush_events(self):
-        """Force flush all pending events from the queue"""
+    def force_flush_events(self, request_id=None):
+        """Force flush all pending events from the queue for a specific request"""
         if self.streaming:
-            queue_size = self.stream_queue.qsize()
-            print(f"🔄 Force flushing {queue_size} pending events...")
-            flushed_count = 0
-            while not self.stream_queue.empty():
-                try:
-                    event = self.stream_queue.get_nowait()
-                    flushed_count += 1
-                    print(f"💨 Flushed event #{flushed_count}: {event.get('type', 'unknown')}")
-                except:
-                    break
-            print(f"✅ Flushed {flushed_count} events") 
+            target_request_id = request_id or self.active_request_id
+            
+            if target_request_id and target_request_id in self.request_queues:
+                request_queue = self.request_queues[target_request_id]
+                queue_size = request_queue.qsize()
+                print(f"🔄 Force flushing {queue_size} pending events for request {target_request_id}...")
+                flushed_count = 0
+                while not request_queue.empty():
+                    try:
+                        event = request_queue.get_nowait()
+                        flushed_count += 1
+                        print(f"💨 Flushed event #{flushed_count}: {event.get('type', 'unknown')}")
+                    except:
+                        break
+                print(f"✅ Flushed {flushed_count} events for request {target_request_id}")
+            else:
+                print(f"⚠️ No queue found for request {target_request_id}") 

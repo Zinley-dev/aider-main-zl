@@ -93,9 +93,9 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
         
         print(f"🔍 Final coder.stream setting: {coder.stream}")
 
-        # Start streaming
-        streaming_io.start_streaming()
-        print(f"🌊 Started streaming with io: {type(streaming_io)}")
+        # Start streaming with a unique request ID
+        request_id = streaming_io.start_streaming()
+        print(f"🌊 Started streaming with io: {type(streaming_io)}, request_id: {request_id}")
         print(f"🌊 Streaming active: {streaming_io.streaming}")
         
         # Stream initial analysis with context
@@ -188,71 +188,46 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
                             print(f"🔍 Processing chunk #{chunk_count}: '{chunk_str[:50]}...'")
                             
                             # Emit the actual AI text as streaming response
-                            ai_text_event = {
-                                "type": "ai_response_chunk",
-                                "data": {
-                                    "chunk": chunk_str,
-                                    "chunk_count": chunk_count,
-                                    "total_length": len(final_result),
-                                    "message": chunk_str  # The actual AI text content
-                                },
-                                "timestamp": time.time()
-                            }
-                            streaming_io.stream_queue.put_nowait(ai_text_event)
+                            streaming_io.emit_event_sync("ai_response_chunk", {
+                                "chunk": chunk_str,
+                                "chunk_count": chunk_count,
+                                "total_length": len(final_result),
+                                "message": chunk_str  # The actual AI text content
+                            })
                             
                             # Also emit debug info
-                            debug_event = {
-                                "type": "ai_chunk_debug",
-                                "data": {
-                                    "chunk": chunk_str,
-                                    "chunk_count": chunk_count,
-                                    "chunk_length": len(chunk_str),
-                                    "message": f"🔍 Raw chunk #{chunk_count}: {chunk_str[:100]}{'...' if len(chunk_str) > 100 else ''}"
-                                },
-                                "timestamp": time.time()
-                            }
-                            streaming_io.stream_queue.put_nowait(debug_event)
+                            streaming_io.emit_event_sync("ai_chunk_debug", {
+                                "chunk": chunk_str,
+                                "chunk_count": chunk_count,
+                                "chunk_length": len(chunk_str),
+                                "message": f"🔍 Raw chunk #{chunk_count}: {chunk_str[:100]}{'...' if len(chunk_str) > 100 else ''}"
+                            })
                             
                             # Emit AI output events for compatibility
-                            ai_output_event = {
-                                "type": "ai_output",
-                                "data": {
-                                    "message": chunk_str,
-                                    "chunk_index": chunk_count - 1,
-                                    "total_length": len(final_result),
-                                    "is_streaming": True
-                                },
-                                "timestamp": time.time()
-                            }
-                            streaming_io.stream_queue.put_nowait(ai_output_event)
+                            streaming_io.emit_event_sync("ai_output", {
+                                "message": chunk_str,
+                                "chunk_index": chunk_count - 1,
+                                "total_length": len(final_result),
+                                "is_streaming": True
+                            })
                             
                 except Exception as e:
                     import traceback
                     traceback.print_exc()
                     
-                    error_event = {
-                        "type": "ai_chunk_debug",
-                        "data": {
-                            "chunk": f"ERROR: {str(e)}",
-                            "chunk_count": chunk_count,
-                            "message": f"❌ Stream error: {str(e)}"
-                        },
-                        "timestamp": time.time()
-                    }
-                    streaming_io.stream_queue.put_nowait(error_event)
+                    streaming_io.emit_event_sync("ai_chunk_debug", {
+                        "chunk": f"ERROR: {str(e)}",
+                        "chunk_count": chunk_count,
+                        "message": f"❌ Stream error: {str(e)}"
+                    })
                                 
                 # Final completion event
-                completion_event = {
-                    "type": "ai_response_complete",
-                    "data": {
-                        "final_content": final_result,
-                        "final_length": len(final_result),
-                        "total_chunks": chunk_count,
-                        "message": f"AI response completed with {chunk_count} chunks"
-                    },
-                    "timestamp": time.time()
-                }
-                streaming_io.stream_queue.put_nowait(completion_event)
+                streaming_io.emit_event_sync("ai_response_complete", {
+                    "final_content": final_result,
+                    "final_length": len(final_result),
+                    "total_chunks": chunk_count,
+                    "message": f"AI response completed with {chunk_count} chunks"
+                })
                 
                 return final_result
             
@@ -275,7 +250,7 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
         
         # Stream events cho đến khi coder hoàn thành
         response = None
-        stream_generator = streaming_io.get_stream_events()
+        stream_generator = streaming_io.get_stream_events(request_id)
         
         # Counter for different event types
         event_counts = {
@@ -336,7 +311,7 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
         print(f"🔍 Start getting response from coder.....")
         response = await coder_task
         print(f"🔍 Response: {response}")
-        streaming_io.stop_streaming()
+        streaming_io.stop_streaming(request_id)
         
         # Stream final analysis
         yield f"event: execution_step\ndata: {json.dumps({'step': 'analyzing_results', 'message': 'Analyzing generated code...', 'status': 'running'})}\n\n"
@@ -431,8 +406,8 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
     except Exception as e:
         yield f"event: error\ndata: {json.dumps({'message': str(e), 'type': 'exception'})}\n\n"
     finally:
-        if streaming_io:
-            streaming_io.stop_streaming()
+        if streaming_io and 'request_id' in locals():
+            streaming_io.stop_streaming(request_id)
         try:
             os.chdir(original_cwd)
         except:
