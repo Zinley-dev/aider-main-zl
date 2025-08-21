@@ -593,9 +593,6 @@
   use_temperature: false
   editor_model_name: openrouter/deepseek/deepseek-chat-v3-0324:free
   editor_edit_format: editor-diff
-  use_temperature: false
-  editor_model_name: openrouter/deepseek/deepseek-r1:free
-  editor_edit_format: editor-diff
 
 - name: deepseek/deepseek-reasoner
   edit_format: diff
@@ -1004,7 +1001,7 @@
 
 - name: openrouter/x-ai/grok-3-mini-beta
   use_repo_map: true
-  edit_format: whole
+  edit_format: diff
   accepts_settings:
     - reasoning_effort 
   #extra_params:
@@ -1055,7 +1052,7 @@
 
 - name: xai/grok-3-mini-beta
   use_repo_map: true
-  edit_format: whole
+  edit_format: diff
   accepts_settings:
     - reasoning_effort
   #extra_params:
@@ -1072,13 +1069,13 @@
 
 - name: openrouter/x-ai/grok-3-mini-fast-beta
   use_repo_map: true
-  edit_format: whole
+  edit_format: diff
   accepts_settings:
     - reasoning_effort
 
 - name: xai/grok-3-mini-fast-beta
   use_repo_map: true
-  edit_format: whole
+  edit_format: diff
   accepts_settings:
     - reasoning_effort
 
@@ -1718,7 +1715,6 @@
   reminder: sys
   examples_as_sys_msg: true
   editor_edit_format: editor-diff
-  streaming: true
 
 - name: snowx/gpt-4.1
   edit_format: diff
@@ -1739,6 +1735,28 @@
 
 - name: snowx/gpt-4.1-nano
   weak_model_name: snowx/gpt-4.1-nano
+  lazy: true
+  reminder: sys
+
+- name: snowx/gpt-5
+  edit_format: diff
+  weak_model_name: snowx/gpt-5-mini
+  use_repo_map: true
+  lazy: false
+  reminder: sys
+  examples_as_sys_msg: false
+  editor_edit_format: editor-diff
+
+- name: snowx/gpt-5-mini
+  edit_format: diff
+  weak_model_name: snowx/gpt-5-nano
+  use_repo_map: true
+  lazy: false
+  reminder: sys
+  examples_as_sys_msg: false
+
+- name: snowx/gpt-5-nano
+  weak_model_name: snowx/gpt-5-nano
   lazy: true
   reminder: sys
 
@@ -1766,6 +1784,28 @@
   extra_params:
     extra_body:
       reasoning_effort: high
+
+- name: snowx/opus4
+  edit_format: diff
+  weak_model_name: snowx/claude-3-5-sonnet
+  use_repo_map: true
+  editor_model_name: snowx/claude-sonnet-4
+  editor_edit_format: editor-diff
+  accepts_settings: ["thinking_tokens"]
+  examples_as_sys_msg: false
+  extra_params:
+    max_tokens: 32000
+
+- name: snowx/opus4.1
+  edit_format: diff
+  weak_model_name: snowx/claude-3-5-sonnet
+  use_repo_map: true
+  editor_model_name: snowx/claude-sonnet-4
+  editor_edit_format: editor-diff
+  accepts_settings: ["thinking_tokens"]
+  examples_as_sys_msg: false
+  extra_params:
+    max_tokens: 32000
 
 - name: snowx/claude-opus-4
   edit_format: diff
@@ -1814,7 +1854,7 @@
 
 - name: snowx/grok-3-mini
   weak_model_name: snowx/grok-3-mini
-  edit_format: whole
+  edit_format: diff
   use_repo_map: true
   accepts_settings: ["reasoning_effort", "thinking_tokens"]
 
@@ -1843,4 +1883,3 @@
   use_repo_map: true
   reminder: sys
   examples_as_sys_msg: true
-
