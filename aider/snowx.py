@@ -109,6 +109,8 @@ class SnowXClient:
         "snowx/gpt-4.1-nano": "gpt-4.1-nano",
         "snowx/o4-mini": "o4-mini",
         "snowx/o4-mini-high": "o4-mini",  # Uses o4-mini with high reasoning effort
+        "snowx/opus4": "us.anthropic.claude-opus-4-20250514-v1:0",
+        "snowx/opus4.1": "us.anthropic.claude-opus-4-1-20250805-v1:0",
         "snowx/claude-opus-4": "us.anthropic.claude-opus-4-20250514-v1:0",
         "snowx/claude-sonnet-4": "us.anthropic.claude-sonnet-4-20250514-v1:0",
         "snowx/claude-3-7-sonnet": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
@@ -119,6 +121,9 @@ class SnowXClient:
         "snowx/llama-maverick": "Llama-4-Maverick-17B-128E-Instruct-FP8",
         "snowx/deepseek-r1": "DeepSeek-R1",
         "snowx/deepseek-v3": "DeepSeek-V3",
+        "snowx/gpt-5": "gpt-5-chat",
+        "snowx/gpt-5-mini": "gpt-5-mini",
+        "snowx/gpt-5-nano": "gpt5-nano",
     }
     
     # Map model to provider
@@ -129,6 +134,7 @@ class SnowXClient:
         "gpt-4.1-nano": "GPT",
         "o4-mini": "GPT",
         "us.anthropic.claude-opus-4-20250514-v1:0": "BEDROCK",
+        "us.anthropic.claude-opus-4-1-20250805-v1:0": "BEDROCK",
         "us.anthropic.claude-sonnet-4-20250514-v1:0": "BEDROCK",
         "us.anthropic.claude-3-7-sonnet-20250219-v1:0": "BEDROCK",
         "us.anthropic.claude-3-5-sonnet-20241022-v2:0": "BEDROCK",
@@ -138,6 +144,9 @@ class SnowXClient:
         "Llama-4-Maverick-17B-128E-Instruct-FP8": "FOUNDRY",
         "DeepSeek-R1": "FOUNDRY",
         "DeepSeek-V3": "FOUNDRY",
+        "gpt-5-chat": "FOUNDRY",
+        "gpt-5-mini": "FOUNDRY",
+        "gpt5-nano": "FOUNDRY",
     }
     
     def __init__(self):
@@ -249,34 +258,36 @@ class SnowXClient:
             "agent": "default"
         }
         
-        # Get max tokens from model info if not provided
-        if max_tokens:
-            request_body["max_tokens"] = max_tokens
-        else:
-            # Get model info from metadata
-            try:
-                model_info = model_info_manager.get_model_info(model)
-                default_max_tokens = model_info.get("max_tokens") or model_info.get("max_output_tokens")
-                
-                # Special handling for o4-mini models
-                if model.startswith("snowx/o4-mini"):
-                    # o4-mini uses max_completion_tokens instead of max_tokens
-                    request_body["max_completion_tokens"] = default_max_tokens or 100000
-                else:
-                    request_body["max_tokens"] = default_max_tokens or 4096
-            except Exception:
-                # Fallback to hardcoded defaults if model info not found
-                if model.startswith("snowx/o4-mini"):
-                    request_body["max_completion_tokens"] = 100000
-                else:
-                    request_body["max_tokens"] = 4096
-                
-        # Handle o4-mini specific parameters
-        if model != "snowx/o4-mini" and model != "snowx/o4-mini-high":
-            request_body["temperature"] = temperature
-            # Only set top_p if explicitly provided in kwargs
-            if "top_p" in kwargs:
-                request_body["top_p"] = kwargs["top_p"]
+        # Skip max_tokens, temperature, and top_p for GPT-5 models - backend handles these
+        if not model.startswith("snowx/gpt-5"):
+            # Get max tokens from model info if not provided
+            if max_tokens:
+                request_body["max_tokens"] = max_tokens
+            else:
+                # Get model info from metadata
+                try:
+                    model_info = model_info_manager.get_model_info(model)
+                    default_max_tokens = model_info.get("max_tokens") or model_info.get("max_output_tokens")
+                    
+                    # Special handling for o4-mini models
+                    if model.startswith("snowx/o4-mini"):
+                        # o4-mini uses max_completion_tokens instead of max_tokens
+                        request_body["max_completion_tokens"] = default_max_tokens or 100000
+                    else:
+                        request_body["max_tokens"] = default_max_tokens or 4096
+                except Exception:
+                    # Fallback to hardcoded defaults if model info not found
+                    if model.startswith("snowx/o4-mini"):
+                        request_body["max_completion_tokens"] = 100000
+                    else:
+                        request_body["max_tokens"] = 4096
+                    
+            # Handle o4-mini specific parameters
+            if model != "snowx/o4-mini" and model != "snowx/o4-mini-high":
+                request_body["temperature"] = temperature
+                # Only set top_p if explicitly provided in kwargs
+                if "top_p" in kwargs:
+                    request_body["top_p"] = kwargs["top_p"]
             
         # Handle reasoning effort for o4-mini-high
         if model == "snowx/o4-mini-high":
