@@ -31,9 +31,19 @@ def get_or_create_session(session_id: str = None, repo_path: str = None, model: 
                 print(f"Creating new StreamingApiInputOutput for concurrent request on session {session_id}")
                 new_io = StreamingApiInputOutput()
                 
+                # Check if model has changed for streaming requests
+                current_model_name = current_coder.main_model.name if current_coder.main_model else None
+                if current_model_name and model and current_model_name != model:
+                    # Use the new model for streaming requests
+                    print(f"Model changed from {current_model_name} to {model} for streaming request")
+                    main_model = Model(model)
+                else:
+                    # Use existing model
+                    main_model = current_coder.main_model
+                
                 # Create a new coder instance with the new IO but preserve state
                 new_coder = Coder.create(
-                    main_model=current_coder.main_model,
+                    main_model=main_model,
                     io=new_io,
                     from_coder=current_coder,
                     edit_format=edit_format,
@@ -535,8 +545,8 @@ def create_temp_repo(files: List[str] = None) -> str:
     """
     Tạo temporary repo directory
     """
-    # temp_dir = os.path.join("/Users/hoangnm/Desktop/test", "temp")
-    temp_dir = os.path.join("/app", "temp")
+    temp_dir = os.path.join("/Users/hoangnm/Desktop/test", "temp")
+    # temp_dir = os.path.join("/app", "temp")
     
     # Nếu không có files, dùng mặc định ["index.html"]
     if not files:
