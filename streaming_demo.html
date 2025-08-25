@@ -620,6 +620,25 @@
                         </div>
 
                         <div class="form-group">
+                            <label>🔐 Access Token:</label>
+                            <input type="password" class="accessToken" placeholder="Enter your Firebase access token..." style="font-family: monospace; font-size: 12px;">
+                            <div style="margin-top: 5px;">
+                                <button class="checkQuota" type="button" style="background: #17a2b8; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.3s ease;">📊 Check Quota</button>
+                                <small style="margin-left: 10px; color: #666; font-size: 11px;">Required for API authentication. Get from your Firebase app.</small>
+                            </div>
+                        </div>
+
+                        <div class="error-message" style="display: none; background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #f5c6cb;">
+                            <strong>⚠️ Error:</strong> <span class="error-text"></span>
+                        </div>
+
+                        <div class="quota-info" style="display: none; background: #d1ecf1; color: #0c5460; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #bee5eb;">
+                            <strong>📊 Quota Status:</strong> 
+                            <span class="quota-used">0</span>/<span class="quota-limit">0</span> 
+                            (<span class="quota-plan">unknown</span> plan)
+                        </div>
+
+                        <div class="form-group">
                             <label>🤖 Model:</label>
                             <select class="model">
                                 <option value="snowx/gpt-4.1" selected>SnowX GPT-4.1 (Default)</option>
@@ -707,6 +726,7 @@
             const stopStreamBtn = content.querySelector('.stopStream');
             const modelSelect = content.querySelector('.model');
             const randomPromptBtn = content.querySelector('.randomPrompt');
+            const checkQuotaBtn = content.querySelector('.checkQuota');
             const messageTextarea = content.querySelector('.message');
             const openFileBtn = content.querySelector('.openFile');
             const copyPathBtn = content.querySelector('.copyPath');
@@ -728,6 +748,21 @@
                 setTimeout(() => {
                     randomPromptBtn.textContent = '🎲 Random Prompt';
                 }, 1000);
+            });
+
+            // Check quota handler
+            checkQuotaBtn.addEventListener('click', async () => {
+                checkQuotaBtn.disabled = true;
+                checkQuotaBtn.textContent = '🔄 Checking...';
+                
+                try {
+                    await checkQuota(tabId);
+                } catch (error) {
+                    showErrorMessage(tabId, `Error checking quota: ${error.message}`);
+                } finally {
+                    checkQuotaBtn.disabled = false;
+                    checkQuotaBtn.textContent = '📊 Check Quota';
+                }
             });
 
             // Open file handler
@@ -929,14 +964,24 @@
             sendMessageBtn.addEventListener('click', async () => {
                 const message = content.querySelector('.message').value.trim();
                 const files = content.querySelector('.files').value.split('\n').filter(f => f.trim());
+                const selectedModel = content.querySelector('.model').value;
+                const accessToken = content.querySelector('.accessToken').value.trim();
+
+                // Clear previous error messages
+                hideErrorMessage(tabId);
+
+                if (!accessToken) {
+                    showErrorMessage(tabId, 'Access token is required for authentication');
+                    return;
+                }
 
                 if (!message) {
-                    alert('Please enter a message');
+                    showErrorMessage(tabId, 'Please enter a message');
                     return;
                 }
 
                 if (!session.sessionId) {
-                    alert('Please create a session first');
+                    showErrorMessage(tabId, 'Please create a session first');
                     return;
                 }
 
@@ -963,6 +1008,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`,
                         },
                         body: JSON.stringify({
                             session_id: session.sessionId,
@@ -974,7 +1020,33 @@
                     });
 
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        const errorData = await response.json().catch(() => ({ detail: `HTTP error! status: ${response.status}` }));
+                        
+                        if (response.status === 401) {
+                            showErrorMessage(tabId, 'Invalid or expired access token. Please check your token.');
+                            return;
+                        } else if (response.status === 429) {
+                            // Handle quota exceeded error
+                            if (errorData.detail && typeof errorData.detail === 'object') {
+                                const quotaInfo = errorData.detail.quota_info;
+                                showErrorMessage(tabId, `${errorData.detail.message}`);
+                                if (quotaInfo) {
+                                    showQuotaInfo(tabId, quotaInfo.used, quotaInfo.limit, quotaInfo.plan, quotaInfo.usage_breakdown);
+                                }
+                            } else {
+                                showErrorMessage(tabId, 'Usage quota exceeded. Please upgrade your plan.');
+                            }
+                            return;
+                        } else {
+                            throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                        }
+                    }
+
+                    // Check for quota info in response headers
+                    const quotaUsed = response.headers.get('X-Quota-Used');
+                    const quotaLimit = response.headers.get('X-Quota-Limit');
+                    if (quotaUsed && quotaLimit) {
+                        updateQuotaDisplay(tabId, parseInt(quotaUsed), parseInt(quotaLimit));
                     }
 
                     const reader = response.body.getReader();
@@ -1434,6 +1506,100 @@
             // Create first session by default
             createNewSessionTab();
         });
+        // Helper functions for error and quota display
+        function showErrorMessage(tabId, message) {
+            const content = document.getElementById(`content_${tabId}`);
+            const errorDiv = content.querySelector('.error-message');
+            const errorText = content.querySelector('.error-text');
+            
+            errorText.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                hideErrorMessage(tabId);
+            }, 10000);
+        }
+
+        function hideErrorMessage(tabId) {
+            const content = document.getElementById(`content_${tabId}`);
+            const errorDiv = content.querySelector('.error-message');
+            errorDiv.style.display = 'none';
+        }
+
+        function showQuotaInfo(tabId, used, limit, plan, usageBreakdown) {
+            const content = document.getElementById(`content_${tabId}`);
+            const quotaDiv = content.querySelector('.quota-info');
+            const quotaUsed = content.querySelector('.quota-used');
+            const quotaLimit = content.querySelector('.quota-limit');
+            const quotaPlan = content.querySelector('.quota-plan');
+            
+            quotaUsed.textContent = used;
+            quotaLimit.textContent = limit;
+            quotaPlan.textContent = plan;
+            
+            quotaDiv.style.display = 'block';
+            
+            // Add usage breakdown if available
+            if (usageBreakdown) {
+                const breakdown = Object.entries(usageBreakdown)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join(', ');
+                quotaDiv.title = `Usage breakdown: ${breakdown}`;
+            }
+        }
+
+        function updateQuotaDisplay(tabId, used, limit) {
+            const content = document.getElementById(`content_${tabId}`);
+            const quotaDiv = content.querySelector('.quota-info');
+            const quotaUsed = content.querySelector('.quota-used');
+            const quotaLimit = content.querySelector('.quota-limit');
+            
+            quotaUsed.textContent = used;
+            quotaLimit.textContent = limit;
+            quotaDiv.style.display = 'block';
+        }
+
+        function hideQuotaInfo(tabId) {
+            const content = document.getElementById(`content_${tabId}`);
+            const quotaDiv = content.querySelector('.quota-info');
+            quotaDiv.style.display = 'none';
+        }
+
+        // Add quota check function
+        async function checkQuota(tabId) {
+            const content = document.getElementById(`content_${tabId}`);
+            const accessToken = content.querySelector('.accessToken').value.trim();
+            
+            if (!accessToken) {
+                showErrorMessage(tabId, 'Access token is required to check quota');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/quota`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const quota = data.quota;
+                    showQuotaInfo(tabId, quota.used, quota.limit, quota.plan, quota.usage_breakdown);
+                    addMessage(tabId, 'system', `✅ Quota checked - ${quota.used}/${quota.limit} (${quota.plan} plan)`, {});
+                } else if (response.status === 401) {
+                    showErrorMessage(tabId, 'Invalid access token for quota check');
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    showErrorMessage(tabId, `Failed to check quota: ${errorData.detail || 'Unknown error'}`);
+                }
+            } catch (error) {
+                showErrorMessage(tabId, `Error checking quota: ${error.message}`);
+            }
+        }
+
     </script>
 </body>
 
