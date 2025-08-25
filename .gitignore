@@ -18,3 +18,4 @@ aider/_version.py
 tmp.benchmarks/
 api_venv_312/
 .env
+snowx.json
