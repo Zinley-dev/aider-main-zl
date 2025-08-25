@@ -1,13 +1,151 @@
-from fastapi import FastAPI, Depends, HTTPException, Body, Request, UploadFile, File, Form
+from fastapi import FastAPI, Depends, HTTPException, Body, Request, UploadFile, File, Form, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 import uvicorn
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import time
+import logging
 
 from aider.main import register_models, load_dotenv_files
 from config import settings
+from firebase_util import get_firebase_util
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Initialize Firebase utility
+firebase_util = get_firebase_util()
+
+# Authentication and quota checking functions
+class UserInfo(BaseModel):
+    uid: str
+    email: str
+    name: Optional[str] = None
+    quota_info: Dict[str, Any]
+
+def extract_token_from_header(authorization: Optional[str] = Header(None)) -> str:
+    """
+    Extract Bearer token from Authorization header.
+    
+    Args:
+        authorization: Authorization header value
+        
+    Returns:
+        Access token string
+        
+    Raises:
+        HTTPException: If token is missing or invalid format
+    """
+    if not authorization:
+        raise HTTPException(
+            status_code=401,
+            detail="Authorization header is required"
+        )
+    
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Authorization header must be in format: Bearer <token>"
+        )
+    
+    token = authorization.replace("Bearer ", "", 1).strip()
+    
+    if not token:
+        raise HTTPException(
+            status_code=401,
+            detail="Access token is required"
+        )
+    
+    return token
+
+async def verify_user_and_quota(authorization: Optional[str] = Header(None)) -> UserInfo:
+    """
+    Verify user access token and check quota limits.
+    
+    Args:
+        authorization: Authorization header with Bearer token
+        
+    Returns:
+        UserInfo object with user data and quota info
+        
+    Raises:
+        HTTPException: If token is invalid or quota exceeded
+    """
+    try:
+        # Extract token from header
+        access_token = extract_token_from_header(authorization)
+        
+        # Verify token with Firebase
+        user_info = firebase_util.verify_access_token(access_token)
+        if not user_info:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid or expired access token"
+            )
+        
+        # Get user quota information
+        quota_info = firebase_util.get_user_quota(access_token)
+        if not quota_info:
+            raise HTTPException(
+                status_code=500,
+                detail="Unable to retrieve user quota information"
+            )
+        
+        # Check if user has exceeded quota
+        used = quota_info.get('used', 0)
+        limit = quota_info.get('limit', 0)
+        
+        if used >= limit:
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error": "Quota exceeded",
+                    "message": f"You have exceeded your usage limit ({used}/{limit})",
+                    "quota_info": {
+                        "used": used,
+                        "limit": limit,
+                        "plan": quota_info.get('plan', 'unknown'),
+                        "usage_breakdown": quota_info.get('usage_breakdown', {})
+                    }
+                }
+            )
+        
+        logger.info(f"User authenticated: {user_info['uid']} - Usage: {used}/{limit}")
+        
+        return UserInfo(
+            uid=user_info['uid'],
+            email=user_info['email'],
+            name=user_info.get('name'),
+            quota_info=quota_info
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in user verification: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error during authentication"
+        )
+
+async def increment_user_usage(user_uid: str, usage_type: str = "prompt") -> bool:
+    """
+    Increment user usage after successful API call.
+    
+    Args:
+        user_uid: User ID
+        usage_type: Type of usage to increment
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        return firebase_util.update_user_usage(user_uid, usage_type, 1)
+    except Exception as e:
+        logger.error(f"Error incrementing usage for user {user_uid}: {str(e)}")
+        return False
 from api_controller import (
     chat_stream,
     chat_non_stream,
@@ -128,27 +266,60 @@ class SyncFileResponse(BaseModel):
 
 # Định nghĩa các endpoint
 @app.post("/chat")
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, user: UserInfo = Depends(verify_user_and_quota)):
     """
     Gửi tin nhắn tới Aider và nhận phản hồi
     Hỗ trợ cả streaming (SSE) và non-streaming
+    Requires authentication via Authorization: Bearer <token> header
     """
-    if request.stream:
-        # Trả về streaming response
-        return StreamingResponse(
-            chat_stream(request),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "*",
-            }
-        )
-    else:
-        # Trả về response thông thường
-        result = await chat_non_stream(request)
-        return ChatResponse(**result)
+    try:
+        if request.stream:
+            # For streaming, we need to increment usage before starting
+            await increment_user_usage(user.uid, "prompt")
+            
+            # Trả về streaming response
+            return StreamingResponse(
+                chat_stream(request),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Headers": "*",
+                    "X-User-ID": user.uid,
+                    "X-Quota-Used": str(user.quota_info.get('used', 0)),
+                    "X-Quota-Limit": str(user.quota_info.get('limit', 0)),
+                }
+            )
+        else:
+            # Trả về response thông thường
+            result = await chat_non_stream(request)
+            
+            # Increment usage after successful chat
+            await increment_user_usage(user.uid, "prompt")
+            
+            # Add user info to response
+            response_data = ChatResponse(**result)
+            
+            return response_data
+            
+    except Exception as e:
+        logger.error(f"Error in chat endpoint for user {user.uid}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/quota")
+async def get_user_quota(user: UserInfo = Depends(verify_user_and_quota)):
+    """
+    Get current user quota information
+    """
+    return {
+        "user": {
+            "uid": user.uid,
+            "email": user.email,
+            "name": user.name
+        },
+        "quota": user.quota_info
+    }
 
 @app.get("/models")
 async def get_models():
