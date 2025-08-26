@@ -174,18 +174,18 @@ class FirebaseUtil:
             
             # Set limits based on plan
             limit_mapping = {
-                'free': 5,
-                'plus': 250,
-                'pro': 500
+                'free': 25,
+                'plus': 500,
+                'pro': 5000
             }
             limit = limit_mapping.get(plan, 1000)
             
             # Calculate total usage from different usage types
             total_used = (
-                usage.get('prompt', 0) + 
-                usage.get('deepPrompt', 0) + 
-                usage.get('enhancedPrompt', 0) + 
-                usage.get('flowsAction', 0)
+                usage.get('prompt', 0)
+                # usage.get('deepPrompt', 0) + 
+                # usage.get('enhancedPrompt', 0) + 
+                # usage.get('flowsAction', 0)
             )
             
             # Build quota info
