@@ -4,140 +4,17 @@ Custom prompt components for dynamic system reminder generation
 
 from typing import List, Dict, Optional
 
+from prompt_service import get_prompt
+
 class PromptComponents:
     """
     Centralized prompt components for dynamic system reminder generation
     """
     
     # Base SEARCH/REPLACE rules that are always included
-    BASE_RULES = """# *SEARCH/REPLACE block* Rules:
-
-Every *SEARCH/REPLACE block* must use this format:
-1. The *FULL* file path alone on a line, verbatim. No bold asterisks, no quotes around it, no escaping of characters, etc.
-2. The opening fence and code language, eg: ```python
-3. The start of search block: <<<<<<< SEARCH
-4. A contiguous chunk of lines to search for in the existing source code
-5. The dividing line: =======
-6. The lines to replace into the source code
-7. The end of the replace block: >>>>>>> REPLACE
-8. The closing fence: ```
-
-Use the *FULL* file path, as shown to you by the user.
-Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
-If the file contains code or other data wrapped/escaped in json/xml/quotes or other containers, you need to propose edits to the literal contents of the file, including the container markup.
-
-*SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
-Including multiple unique *SEARCH/REPLACE* blocks if needed.
-Include enough lines in each SEARCH section to uniquely match each set of lines that need to change.
-
-Keep *SEARCH/REPLACE* blocks concise.
-Break large *SEARCH/REPLACE* blocks into a series of smaller blocks that each change a small portion of the file.
-Include just the changing lines, and a few surrounding lines if needed for uniqueness.
-Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
-
-Only create *SEARCH/REPLACE* blocks for files that the user has added to the chat!
-
-To move code within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
-
-Pay attention to which filenames the user wants you to edit, especially if they are asking you to create a new file.
-
-If you want to put code in a new file, use a *SEARCH/REPLACE block* with:
-- A new file path, including dir name if needed
-- An empty `SEARCH` section
-- The new file's contents in the `REPLACE` section"""
-
+    BASE_RULES = get_prompt('AIDER_API', 'BASE_RULES')
     # Critical behavioral instructions that are always included
-    CRITICAL_INSTRUCTIONS = """
-🌟 Extended Design Rules for AI Agent
-📄 Single File Only: index.html (HTML + CSS + JS embedded) 🎯 Goal: Always generate elegant, professional, visually balanced designs
-
-
-🔒 General Rule: Output Constraints
-* Always output everything in one index.html file.
-* Do not split into multiple files (no external .css, .js, or imports).
-* Only use pure HTML, CSS, and vanilla JavaScript.
-* If the request requires features outside HTML/CSS/JS (e.g. React, backend, Tailwind, DB, WebGL):
-    * Politely reply: "This design is limited to a single HTML/CSS/JS file. External frameworks or server-side logic aren’t supported in this format." 
-
-
-🧱 VISUAL DESIGN PRINCIPLES
-1. Use of Whitespace
-* Allow generous space between elements.
-* Don't crowd text, buttons, or cards — breathing space = elegance.
-* Avoid edge-to-edge content blocks unless intentionally styled that way.
-2. Color Usage
-* Use neutral base tones (white, light gray, beige, off-black).
-* Choose 1 main accent color and 1 subtle highlight tone.
-    * E.g., muted gold, navy, emerald, dusty rose — not neon.
-* Avoid too many color variations. Minimalism adds polish.
-3. Typography Refinement
-* Use clear font hierarchy: H1 > H2 > H3 > Body > Caption
-* Titles should have breathing space above/below.
-* Avoid overuse of bold or uppercase — use sparingly to emphasize.
-4. Box and Card Design
-* Use large border-radius (16px–32px) for elegance.
-* Apply very soft shadows only — subtle and natural.
-* Padding inside cards should be even and generous.
-
-🧭 LAYOUT AND ALIGNMENT RULES
-5. Grid Consistency
-* Align elements along consistent visual axes.
-* Use 12-column or percentage-based grid structure for harmony.
-* Avoid jagged or asymmetric placements unless part of a visual theme.
-6. Section Composition
-* Each major section (hero, features, contact) should:
-    * Be visually distinct
-    * Contain a clear focal point
-    * Use vertical spacing to separate clearly from others
-7. Responsive Aesthetics
-* Font sizes, paddings, and margins should scale naturally with screen size.
-* Avoid overflow or horizontal scroll on mobile.
-* Maintain center alignment for small screens.
-
-🎯 COMPONENT POLISHING RULES
-8. Buttons and CTAs
-* Rounded (pill or 8–12px radius), with distinct yet soft appearance.
-* Hover state: gentle color shift or shadow (no harsh transformations).
-* Use consistent sizing across the page.
-9. Icons and Visuals
-* Use simple line icons or stylized SVGs if included.
-* Ensure icons are consistent in stroke, size, and alignment.
-* Icons should complement, not overpower text.
-10. Animation and Motion
-* Use easing functions (ease-in-out) for natural movement.
-* Apply animation selectively:
-    * Reveal on scroll
-    * Hover highlight
-    * Button press or toggle
-* Keep durations short (200–500ms) for responsiveness.
-
-🛠️ FINAL POLISH & MICRO-DETAILS
-11. Consistent Border Use
-* Only use borders when needed to define sections.
-* Favor soft box shadows or background contrast over harsh lines.
-* If used, keep borders thin (1px), muted, and not black.
-12. Feedback States
-* Buttons should show hover, focus, and active states.
-* Form inputs: provide visual feedback on focus and validation.
-* Modals, alerts, or messages should fade smoothly, never pop abruptly.
-13. Section Transitions
-* Visually separate sections with background tone changes or subtle divider lines.
-* Use scroll-based reveal to introduce new sections elegantly.
-14. Image Use
-* Prefer rounded images or soft masks for avatars, team photos, etc.
-* Maintain consistent size and aspect ratio for visual balance.
-* Always provide alt text and align content gracefully.
-
-✅ MUST-HAVE POLISH CHECKLIST (Before Finishing)
-*  Elements are aligned and spaced evenly
-*  Only 1–2 font types used
-*  Color palette is cohesive and minimal
-*  Button states (hover/active/focus) are smooth and visible
-*  No broken layouts at common breakpoints
-*  Typography and layout scale on mobile
-*  All JavaScript features enhance UX without clutter
-"""
-
+    CRITICAL_INSTRUCTIONS = get_prompt('AIDER_API', 'CRITICAL_INSTRUCTIONS')
     # File type specific instructions
     FILE_TYPE_INSTRUCTIONS = {
         '.py': "For Python files: Follow PEP 8 style guide, maintain proper imports, and use type hints where appropriate.",

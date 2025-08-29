@@ -261,6 +261,9 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
             'file_write': 0,
             'execution_step': 0
         }
+        
+        # Store AI response content if no files are changed
+        ai_response_content = None
 
         print(f"🔍 Start streaming events.....")
         
@@ -297,6 +300,11 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
                     if any(keyword in message.lower() for keyword in ['html', 'css', 'javascript', 'function', 'class', 'div']):
                         # Stream as code chunk
                         streaming_io.stream_code_chunk(message[:50], request.files[0] if request.files else "generated.html")
+                
+                # Capture AI response content when no files are changed
+                if event_type == "no_file_changes" and "response_content" in data:
+                    ai_response_content = data["response_content"]
+                    print(f"📝 Captured AI response content from no_file_changes event: {len(ai_response_content)} chars")
                 
             except asyncio.TimeoutError:
                 # Gửi heartbeat với more details
@@ -371,8 +379,12 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
             
             # Stream response with metadata
             yield f"event: response\ndata: {json.dumps({'message': file_content, 'filename': file_name, 'type': 'file_content'})}\n\n"
+        elif ai_response_content:
+            # No files edited but we have AI response content
+            yield f"event: response\ndata: {json.dumps({'message': ai_response_content, 'type': 'ai_response', 'note': 'No file modifications were made'})}\n\n"
         else:
-            yield f"event: response\ndata: {json.dumps({'message': 'ERROR: No files were edited. Please ensure the AI actually modifies the files.', 'type': 'error'})}\n\n"
+            error_msg = get_prompt("AIDER_API", "ERROR_NO_FILES_EDITED_NO_RESPONSE") or "ERROR: No files were edited and no AI response captured."
+            yield f"event: response\ndata: {json.dumps({'message': error_msg, 'type': 'error'})}\n\n"
         
         # Stream completion statistics
         completion_stats = {
@@ -391,14 +403,23 @@ async def chat_stream(request) -> AsyncGenerator[str, None]:
             print(f"🔄 Moved conversation to done_messages for session {session_id}")
         
         # Emit final result với enhanced data
+        # If no files were edited but we have AI response content, use it
+        if not edited_files and ai_response_content:
+            response_text = ai_response_content
+        elif edited_files and len(edited_files) > 0:
+            response_text = edited_files[0].get("content", "")
+        else:
+            response_text = get_prompt("AIDER_API", "ERROR_NO_FILES_EDITED_NO_RESPONSE") or "ERROR: No files were edited and no AI response captured"
+            
         final_result = {
-            "response": edited_files[0].get("content", "") if edited_files and len(edited_files) > 0 else "ERROR: No files were edited",
+            "response": response_text,
             "edited_files": edited_files,
             "session_id": session_id,
             "tokens_sent": getattr(coder, 'message_tokens_sent', 0),
             "tokens_received": getattr(coder, 'message_tokens_received', 0),
             "cost": getattr(coder, 'message_cost', 0.0),
-            "statistics": completion_stats
+            "statistics": completion_stats,
+            "ai_response": ai_response_content  # Include AI response as separate field
         }
         
         yield f"event: complete\ndata: {json.dumps(final_result)}\n\n"
@@ -467,6 +488,10 @@ async def chat_non_stream(request):
         # Xử lý file extraction
         await handle_file_extraction(request, response, io, coder)
         
+        # Check if handle_file_extraction emitted a no_file_changes event
+        # For non-streaming, we'll store the response in a variable
+        ai_response_content = response if response else None
+        
         # Force flush any pending file writes
         if hasattr(coder, 'repo') and coder.repo:
             try:
@@ -505,12 +530,14 @@ async def chat_non_stream(request):
                 "cost": getattr(coder, 'message_cost', 0.0),
                 "output": "",
                 "errors": errors,
-                "warnings": ""
+                "warnings": "",
+                "ai_response": ai_response_content  # Include AI response
             }
         else:
-            # Nếu không có file nào được edit, trả về lỗi
+            # Nếu không có file nào được edit, trả về AI response nếu có
+            response_text = ai_response_content if ai_response_content else (get_prompt("AIDER_API", "ERROR_NO_FILES_EDITED_NO_RESPONSE_AVAILABLE") or "ERROR: No files were edited and no AI response available.")
             return {
-                "response": "ERROR: No files were edited. Please ensure the AI actually modifies the files.",
+                "response": response_text,
                 "edited_files": [],
                 "session_id": session_id,
                 "tokens_sent": getattr(coder, 'message_tokens_sent', 0),
@@ -518,7 +545,8 @@ async def chat_non_stream(request):
                 "cost": getattr(coder, 'message_cost', 0.0),
                 "output": "",
                 "errors": errors,
-                "warnings": ""
+                "warnings": "",
+                "ai_response": ai_response_content  # Include AI response
             }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
